@@ -140,7 +140,7 @@
       </div>
 
       <!-- Main Sensor Metrics Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
         <!-- Sensor 1: MQ-135 Gas Sensor -->
         <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden flex flex-col justify-between">
@@ -215,44 +215,8 @@
             <div class="flex justify-between"><span>Опасность перегрева:</span> <span class="text-rose-400">&gt; 42 °C</span></div>
           </div>
         </div>
-
-        <!-- Sensor 3: SW-520D Tilt & Cave-in Sensor -->
-        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden flex flex-col justify-between">
-          <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
-            <div class="flex items-center gap-2.5">
-              <span class="w-3 h-3 rounded-full bg-purple-500"></span>
-              <h3 class="font-bold text-slate-100">SW-520D Датчик обвала</h3>
-            </div>
-            <span class="text-[10px] font-mono-tech bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">Пин D18 (Pullup)</span>
-          </div>
-
-          <div class="my-4 flex flex-col items-center">
-            <!-- Simulated Visual Inclinometer / Bubble Level -->
-            <div class="w-36 h-36 rounded-full border-4 border-slate-700 bg-slate-950 flex items-center justify-center relative shadow-inner">
-              <div class="w-full h-[1px] bg-slate-800 absolute"></div>
-              <div class="h-full w-[1px] bg-slate-800 absolute"></div>
-              <div class="w-20 h-20 rounded-full border border-dashed border-slate-700 absolute"></div>
-              <!-- Moving Bubble -->
-              <div id="tilt-bubble" class="w-7 h-7 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 transition-all duration-300 flex items-center justify-center">
-                <div class="w-2 h-2 rounded-full bg-white opacity-80"></div>
-              </div>
-            </div>
-
-            <div id="tilt-status-badge" class="text-xs font-semibold text-emerald-400 mt-3 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              Кровля стабильна (Уклон 0°)
-            </div>
-          </div>
-
-          <div class="text-[11px] text-slate-400 space-y-1 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60 font-mono-tech">
-            <div class="flex justify-between"><span>Смещение крепи:</span> <span id="tilt-angle-text" class="text-slate-200">В норме (&lt;15°)</span></div>
-            <div class="flex justify-between"><span>Риск обрушения:</span> <span id="tilt-risk-text" class="text-emerald-400">Отсутствует</span></div>
-            <div class="flex justify-between"><span>Ударная вибрация:</span> <span class="text-slate-200">Низкая</span></div>
-          </div>
-        </div>
-
       </div>
-
-      <!-- Real-Time Telemetry Graph & Simulated Hardware LCD 1602 Display -->
+<!-- Real-Time Telemetry Graph & Simulated Hardware LCD 1602 Display -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
         <!-- Live Canvas Graph (2 cols) -->
@@ -274,7 +238,7 @@
 
           <div class="mt-3 flex items-center justify-between text-xs text-slate-400 font-mono-tech">
             <span>Буфер: 60 последних отсчетов</span>
-            <span id="json-preview">JSON: {"gas":185,"temp":23.8,"hum":62,"tilt":0,"buzzer":0}</span>
+            <span id="json-preview">JSON: {"gas":185,"temp":23.8,"hum":62,"buzzer":0}</span>
           </div>
         </div>
 
@@ -324,13 +288,10 @@
             <button onclick="setScenario('gas')" class="text-xs px-3 py-1.5 rounded-lg bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 border border-rose-500/40 font-semibold transition">
               Сценарий: Утечка Метана
             </button>
-            <button onclick="setScenario('tilt')" class="text-xs px-3 py-1.5 rounded-lg bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 border border-purple-500/40 font-semibold transition">
-              Сценарий: Обвал крепи
-            </button>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
           <!-- Gas Slider -->
           <div class="space-y-1.5">
             <div class="flex justify-between text-xs font-semibold">
@@ -351,18 +312,7 @@
             <span class="text-[11px] text-slate-400 block font-mono-tech">&gt; 38 °C вызывает перегрев забоя</span>
           </div>
 
-          <!-- Tilt Switch Toggle -->
-          <div class="space-y-1.5">
-            <div class="flex justify-between text-xs font-semibold">
-              <span class="text-purple-400">SW-520D (Смещение/Обвал)</span>
-              <span id="slider-tilt-val" class="font-mono-tech text-slate-200">Норма (0°)</span>
-            </div>
-            <div class="flex gap-2">
-              <button onclick="setTiltState(0)" id="btn-tilt-0" class="flex-1 py-1 text-xs font-bold rounded-lg bg-emerald-600 text-white border border-emerald-400 transition">Норма (0°)</button>
-              <button onclick="setTiltState(1)" id="btn-tilt-1" class="flex-1 py-1 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">Наклон / Обвал (45°)</button>
-            </div>
-            <span class="text-[11px] text-slate-400 block font-mono-tech">Шарик замыкает контакт при сдвиге породы</span>
-          </div>
+
         </div>
       </div>
 
@@ -448,7 +398,6 @@
               <button onclick="select3DComponent('mq135')" class="px-2.5 py-1 rounded-lg bg-slate-900/90 text-slate-300 hover:bg-slate-800 border border-slate-800 text-right backdrop-blur transition">💨 Газ MQ-135</button>
               <button onclick="select3DComponent('dht11')" class="px-2.5 py-1 rounded-lg bg-slate-900/90 text-cyan-400 hover:bg-slate-800 border border-slate-800 text-right backdrop-blur transition">🌡️ Климат DHT11</button>
               <button onclick="select3DComponent('esp32')" class="px-2.5 py-1 rounded-lg bg-slate-900/90 text-emerald-400 hover:bg-slate-800 border border-slate-800 text-right backdrop-blur transition">⚡ МК ESP32 DevKit</button>
-              <button onclick="select3DComponent('tilt')" class="px-2.5 py-1 rounded-lg bg-slate-900/90 text-yellow-400 hover:bg-slate-800 border border-slate-800 text-right backdrop-blur transition">📐 Уклон SW-520D</button>
               <button onclick="select3DComponent('buzzer')" class="px-2.5 py-1 rounded-lg bg-slate-900/90 text-rose-400 hover:bg-slate-800 border border-slate-800 text-right backdrop-blur transition">🔊 Зуммер 85 dB</button>
               <button onclick="select3DComponent('casing')" class="px-2.5 py-1 rounded-lg bg-slate-900/90 text-amber-400 hover:bg-slate-800 border border-slate-800 text-right backdrop-blur transition">🛡️ Корпус IP65</button>
             </div>
@@ -459,7 +408,6 @@
               <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-blue-500"></span> LCD 1602</span>
               <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-slate-300"></span> Сетка MQ-135</span>
               <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-cyan-400"></span> DHT11</span>
-              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-yellow-400"></span> SW-520D</span>
               <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-emerald-500"></span> ESP32</span>
             </div>
           </div>
@@ -508,7 +456,6 @@
             <h4 class="font-bold text-cyan-400 uppercase tracking-wider text-xs">Инженерные решения для работы в шахте</h4>
             <ul class="space-y-1.5 text-slate-300">
               <li>• <strong>Искробезопасность:</strong> все контакты изолированы внутри компаунда, герметичный кабельный ввод PG-9.</li>
-              <li>• <strong>Демпфирование SW-520D:</strong> датчик наклона закреплен строго на несущей пластине с демпфером от случайных шагов.</li>
               <li>• <strong>Модульность:</strong> верхняя крышка на 4 винтах М3 со сменными силиконовыми уплотнителями.</li>
             </ul>
           </div>
@@ -539,7 +486,7 @@
   ==================================================================================
   PROJECT: IoT-Based Coal Mine Safety Monitoring &amp; Real-Time Alerting System
   MICROCONTROLLER: ESP32 DevKit v1 (30-pin)
-  SENSORS: MQ-135 (Gas), DHT11 (Temp/Hum), SW-520D (Tilt), LCD 1602 I2C, Active Buzzer
+  SENSORS: MQ-135 (Gas), DHT11 (Temp/Hum), LCD 1602 I2C, Active Buzzer
   NETWORK: Built-in SoftAP (SSID: ESP32_MINE_SAFETY, IP: 192.168.4.1)
   TELEMETRY: JSON REST API endpoint &quot;/data&quot; updated every 500 ms
   ==================================================================================
@@ -554,7 +501,6 @@
 // --- PIN DEFINITIONS (Optimized for ESP32 DevKit v1) ---
 #define PIN_MQ135   34  // Analog Input (ADC1_CH6) - Never conflicts with Wi-Fi!
 #define PIN_DHT     4   // OneWire Digital for DHT11
-#define PIN_TILT    18  // Digital Input with internal PULLUP for SW-520D
 #define PIN_BUZZER  23  // Digital Output for Active Buzzer
 #define PIN_SDA     21  // Hardware I2C SDA for LCD 1602
 #define PIN_SCL     22  // Hardware I2C SCL for LCD 1602
@@ -572,7 +518,6 @@ const char* password = &quot;&quot;; // Open Access Point for instantaneous comm
 float gasPPM = 0.0;
 float temperature = 0.0;
 float humidity = 0.0;
-int isTilt = 0;
 bool isAlarm = false;
 unsigned long lastSampleTime = 0;
 const unsigned long SAMPLE_INTERVAL = 500; // 500 ms high-speed streaming
@@ -598,7 +543,6 @@ const char INDEX_HTML[] PROGMEM = R&quot;rawliteral(
   &lt;h2&gt;ESP32 Mine Safety Dashboard&lt;/h2&gt;
   &lt;div class=&quot;card&quot;&gt;&lt;div&gt;Gas Level (MQ-135)&lt;/div&gt;&lt;div id=&quot;gas&quot; class=&quot;val&quot;&gt;--&lt;/div&gt;&lt;div&gt;PPM&lt;/div&gt;&lt;/div&gt;
   &lt;div class=&quot;card&quot;&gt;&lt;div&gt;Temperature / Humidity&lt;/div&gt;&lt;div id=&quot;th&quot; class=&quot;val&quot;&gt;--&lt;/div&gt;&lt;/div&gt;
-  &lt;div class=&quot;card&quot;&gt;&lt;div&gt;Roof Tilt (SW-520D)&lt;/div&gt;&lt;div id=&quot;tilt&quot; class=&quot;val&quot;&gt;--&lt;/div&gt;&lt;/div&gt;
   &lt;div class=&quot;card&quot;&gt;&lt;div&gt;Status&lt;/div&gt;&lt;div id=&quot;st&quot; class=&quot;val safe&quot;&gt;NORMAL&lt;/div&gt;&lt;/div&gt;
   \&lt;script&gt;
     setInterval(async () =&gt; {
@@ -607,7 +551,7 @@ const char INDEX_HTML[] PROGMEM = R&quot;rawliteral(
         const d = await res.json();
         document.getElementById(&#x27;gas&#x27;).innerText = d.gas_ppm;
         document.getElementById(&#x27;th&#x27;).innerText = d.temp_c + &#x27; C / &#x27; + d.humidity + &#x27; %&#x27;;
-        document.getElementById(&#x27;tilt&#x27;).innerText = d.tilt ? &#x27;COLLAPSE RISK!&#x27; : &#x27;STABLE&#x27;;
+        
         document.getElementById(&#x27;st&#x27;).innerText = d.status;
         document.getElementById(&#x27;st&#x27;).className = &#x27;val &#x27; + (d.alarm ? &#x27;danger&#x27; : &#x27;safe&#x27;);
       } catch(e) {}
@@ -627,7 +571,7 @@ void handleData() {
   json += &quot;\\&quot;gas_ppm\\&quot;:&quot; + String(gasPPM, 0) + &quot;,&quot;;
   json += &quot;\\&quot;temp_c\\&quot;:&quot; + String(temperature, 1) + &quot;,&quot;;
   json += &quot;\\&quot;humidity\\&quot;:&quot; + String(humidity, 0) + &quot;,&quot;;
-  json += &quot;\\&quot;tilt\\&quot;:&quot; + String(isTilt) + &quot;,&quot;;
+  
   json += &quot;\\&quot;buzzer\\&quot;:&quot; + String(isAlarm ? 1 : 0) + &quot;,&quot;;
   json += &quot;\\&quot;alarm\\&quot;:&quot; + String(isAlarm ? 1 : 0) + &quot;,&quot;;
   json += &quot;\\&quot;status\\&quot;:\\&quot;&quot; + String(isAlarm ? &quot;CRITICAL HAZARD!&quot; : &quot;NORMAL&quot;) + &quot;\\&quot;&quot;;
@@ -641,7 +585,6 @@ void setup() {
   Serial.begin(115200);
 
   // Initialize GPIOs
-  pinMode(PIN_TILT, INPUT_PULLUP);
   pinMode(PIN_BUZZER, OUTPUT);
   digitalWrite(PIN_BUZZER, LOW);
 
@@ -690,15 +633,10 @@ void loop() {
     if (!isnan(t)) temperature = t;
     if (!isnan(h)) humidity = h;
 
-    // 3. Read SW-520D Tilt Ball Sensor (LOW = Tilted/Deformed)
-    isTilt = (digitalRead(PIN_TILT) == LOW) ? 1 : 0;
-
     // 4. Determine Critical Alarm Conditions
     bool gasAlert = (gasPPM &gt; 700.0);
     bool tempAlert = (temperature &gt; 38.0);
-    bool tiltAlert = (isTilt == 1);
-
-    isAlarm = (gasAlert || tempAlert || tiltAlert);
+    isAlarm = (gasAlert || tempAlert);
 
     // 5. Trigger Physical Active Buzzer
     if (isAlarm) {
@@ -714,8 +652,7 @@ void loop() {
 
     lcd.setCursor(0, 1);
     lcd.print(&quot;T:&quot; + String((int)temperature) + &quot;C H:&quot; + String((int)humidity) + &quot;% &quot;);
-    if (isTilt) lcd.print(&quot;TILT&quot;);
-    else lcd.print(&quot;OK  &quot;);
+    lcd.print(isAlarm ? &quot;ALARM&quot; : &quot;OK   &quot;);
   }
 }
 </pre>
@@ -728,8 +665,7 @@ void loop() {
       gas: 185,
       temp: 23.8,
       hum: 62,
-      tilt: 0,
-      buzzer: false,
+            buzzer: false,
       status: "SAFE",
       timestamp: 0
     };
@@ -783,8 +719,7 @@ void loop() {
             telemetry.gas = d.gas_ppm !== undefined ? Number(d.gas_ppm) : (d.gas !== undefined ? Number(d.gas) : telemetry.gas);
             telemetry.temp = d.temp_c !== undefined ? Number(d.temp_c) : (d.temp !== undefined ? Number(d.temp) : telemetry.temp);
             telemetry.hum = d.humidity !== undefined ? Number(d.humidity) : (d.hum !== undefined ? Number(d.hum) : telemetry.hum);
-            telemetry.tilt = d.tilt !== undefined ? Number(d.tilt) : telemetry.tilt;
-            isLiveHardware = true;
+                        isLiveHardware = true;
           } else {
             isLiveHardware = false;
           }
@@ -816,9 +751,8 @@ void loop() {
       const isGasDanger = telemetry.gas > 700;
       const isGasWarning = telemetry.gas > 300;
       const isTempDanger = telemetry.temp > 38;
-      const isTiltDanger = telemetry.tilt === 1;
-
-      const isCritical = isGasDanger || isTempDanger || isTiltDanger;
+      
+      const isCritical = isGasDanger || isTempDanger;
       telemetry.buzzer = isCritical;
 
       // Update Status Badge
@@ -832,9 +766,7 @@ void loop() {
         statusBadge.className = "text-base font-bold text-rose-500 flex items-center gap-1.5 mt-0.5";
         alarmBanner.classList.remove('hidden');
 
-        if (isTiltDanger) {
-          alarmText.innerText = "ТРЕВОГА: ЗАФИКСИРОВАНО СМЕЩЕНИЕ ПОРОДЫ / ОБВАЛ КРЕПИ (SW-520D)!";
-        } else if (isGasDanger) {
+        if (isGasDanger) {
           alarmText.innerText = "ТРЕВОГА: ПРЕВЫШЕНИЕ ПДК МЕТАНА / CO В ЗАБОЕ (MQ-135 > 700 PPM)!";
         } else {
           alarmText.innerText = "ТРЕВОГА: КРИТИЧЕСКИЙ ПЕРЕГРЕВ ЗАБОЯ (DHT11 > 38°C)!";
@@ -890,29 +822,10 @@ void loop() {
       const tempPct = Math.min(100, Math.max(0, ((telemetry.temp - 10) / 45) * 100));
       document.getElementById('bar-temp').style.width = tempPct + '%';
 
-      // Tilt Bubble Level
-      const tiltBubble = document.getElementById('tilt-bubble');
-      const tiltBadge = document.getElementById('tilt-status-badge');
-      if (telemetry.tilt === 1) {
-        tiltBubble.style.transform = 'translate(38px, -24px)';
-        tiltBubble.className = "w-7 h-7 rounded-full bg-rose-500 shadow-lg shadow-rose-500/80 transition-all duration-300 flex items-center justify-center animate-ping";
-        tiltBadge.innerText = "СМЕЩЕНИЕ / ОБВАЛ (45°)";
-        tiltBadge.className = "text-xs font-semibold text-rose-400 mt-3 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20";
-        document.getElementById('tilt-risk-text').innerText = "КРИТИЧЕСКИЙ (ОБРУШЕНИЕ)";
-        document.getElementById('tilt-risk-text').className = "text-rose-400 font-bold";
-      } else {
-        tiltBubble.style.transform = 'translate(0px, 0px)';
-        tiltBubble.className = "w-7 h-7 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 transition-all duration-300 flex items-center justify-center";
-        tiltBadge.innerText = "Кровля стабильна (Уклон 0°)";
-        tiltBadge.className = "text-xs font-semibold text-emerald-400 mt-3 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20";
-        document.getElementById('tilt-risk-text').innerText = "Отсутствует";
-        document.getElementById('tilt-risk-text').className = "text-emerald-400";
-      }
-
       // Update On-Device LCD 1602 Simulation
       let lcdGasStatus = isGasDanger ? "DANG" : (isGasWarning ? "WARN" : "NORM");
       let lcdRow0 = `GAS:${Math.round(telemetry.gas)}ppm ${lcdGasStatus}`;
-      let lcdRow1 = `T:${telemetry.temp.toFixed(1)}C H:${Math.round(telemetry.hum)}% ${telemetry.tilt ? "COLLAPSE" : "OK"}`;
+      let lcdRow1 = `T:${telemetry.temp.toFixed(1)}C H:${Math.round(telemetry.hum)}% OK`;
       document.getElementById('lcd-row-0').innerText = lcdRow0.padEnd(16, ' ').slice(0, 16);
       document.getElementById('lcd-row-1').innerText = lcdRow1.padEnd(16, ' ').slice(0, 16);
 
@@ -922,7 +835,7 @@ void loop() {
       drawTelemetryGraph();
 
       // JSON preview
-      const jsonStr = `{"gas":${Math.round(telemetry.gas)},"temp":${telemetry.temp.toFixed(1)},"hum":${Math.round(telemetry.hum)},"tilt":${telemetry.tilt},"buzzer":${telemetry.buzzer ? 1 : 0}}`;
+      const jsonStr = `{"gas":${Math.round(telemetry.gas)},"temp":${telemetry.temp.toFixed(1)},"hum":${Math.round(telemetry.hum)},"buzzer":${telemetry.buzzer ? 1 : 0}}`;
       document.getElementById('json-preview').innerText = "JSON: " + jsonStr;
     }
 
@@ -1031,35 +944,13 @@ void loop() {
       tick();
     }
 
-    function setTiltState(state) {
-      telemetry.tilt = state;
-      const b0 = document.getElementById('btn-tilt-0');
-      const b1 = document.getElementById('btn-tilt-1');
-      if (state === 1) {
-        b1.className = "flex-1 py-1 text-xs font-bold rounded-lg bg-rose-600 text-white border border-rose-400 transition animate-pulse";
-        b0.className = "flex-1 py-1 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition";
-        document.getElementById('slider-tilt-val').innerText = "НАКЛОН / ОБРУШЕНИЕ (45°)";
-      } else {
-        b0.className = "flex-1 py-1 text-xs font-bold rounded-lg bg-emerald-600 text-white border border-emerald-400 transition";
-        b1.className = "flex-1 py-1 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition";
-        document.getElementById('slider-tilt-val').innerText = "Норма (0°)";
-      }
-      tick();
-    }
-
     function setScenario(type) {
       if (type === 'safe') {
         document.getElementById('slider-gas').value = 180;
         document.getElementById('slider-temp').value = 24.0;
-        setTiltState(0);
       } else if (type === 'gas') {
         document.getElementById('slider-gas').value = 850;
         document.getElementById('slider-temp').value = 25.5;
-        setTiltState(0);
-      } else if (type === 'tilt') {
-        document.getElementById('slider-gas').value = 210;
-        document.getElementById('slider-temp').value = 24.2;
-        setTiltState(1);
       }
       manualOverride();
     }
@@ -1122,22 +1013,13 @@ void loop() {
         role: 'Full-Stack сервер и шлюз передачи данных',
         tip: 'Встроенный аппаратный генератор прерываний и независимые таймеры обеспечивают мгновенный отклик сирены при аварии.'
       },
-      tilt: {
-        title: 'SW-520D Tilt & Vibration Sensor (Датчик обвала и смещения кровли)',
-        desc: 'Высокоточный шариковый датчик крена и сейсмических подвижек горной породы. Реагирует на смещение свыше 15 градусов или динамический удар при обрушении крепи шахты.',
-        pin: 'DOUT: GPIO 18 (INPUT_PULLUP)',
-        pwr: '3.3V / 5V',
-        proto: 'Цифровой дискретный сигнал (LOW = Тревога)',
-        role: 'Мгновенная детекция обвала породы и деформации крепи',
-        tip: 'Внутренние позолоченные шарики замыкают цепь без искрообразования, что критически важно во взрывоопасных средах.'
-      },
       buzzer: {
         title: 'Active Buzzer 85 dB (Акустическая сирена оповещения)',
         desc: 'Пьезоэлектрический звуковой излучатель со встроенным звуковым генератором 2.3 кГц. Создает пронзительный звуковой сигнал громкостью 85 дБ для немедленной эвакуации людей из забоя.',
         pin: 'VCC (+): GPIO 23, GND (-): Общий GND',
         pwr: '5V (активация логической единицей HIGH)',
         proto: 'Цифровой дискретный триггер',
-        role: 'Звуковая тревога при загазованности или обвале',
+        role: 'Звуковая тревога при загазованности ',
         tip: 'Активируется аппаратно за 0.1 мс при превышении порога газа 700 ppm или срабатывании датчика наклона.'
       },
       casing: {
@@ -1623,7 +1505,7 @@ void loop() {
       add3DCylinder( sx, baseY + 8,  sz, 3, 10, '#f59e0b', '#b45309', 1.0, 'casing');
 
       // ==========================================
-      // 2. INTERNAL ELECTRONICS (Carrier PCB + ESP32 + SW-520D)
+      // 2. INTERNAL ELECTRONICS (Carrier PCB + ESP32)
       // ==========================================
       // Main Carrier PCB (FR-4 Dark Green Fiberglass)
       add3DBox(0, baseY + 2, 0, 126, 3, 86, '#065f46', '#047857', 0.95, 'esp32');
@@ -1641,13 +1523,6 @@ void loop() {
       // Reset & Boot Buttons
       add3DCylinder(-40, baseY - 6, -8, 1.8, 2.5, '#cbd5e1', '#475569', 1.0, 'esp32');
       add3DCylinder(-40, baseY - 6,  8, 1.8, 2.5, '#cbd5e1', '#475569', 1.0, 'esp32');
-
-      // SW-520D Tilt & Vibration Sensor (Ceiling Collapse Detector)
-      const isTilt = (selectedComp === 'tilt');
-      // Blue breakout board
-      add3DBox(38, baseY - 3, 22, 22, 4, 16, isTilt ? '#38bdf8' : '#1d4ed8', '#1e40af', 1.0, 'tilt');
-      // Shiny Golden Metal Cylindrical Capsule (SW-520D Brass Tube)
-      add3DCylinder(38, baseY - 9, 22, 4.5, 12, isTilt ? '#ffffff' : '#fbbf24', '#d97706', 1.0, 'tilt');
 
       // ==========================================
       // 3. FRONT COVER / LID (Floating in Exploded View)
@@ -1744,8 +1619,6 @@ void loop() {
         add3DWire([-48, lidY - 3, -24], [-30, baseY - 4, -10], '#a855f7', 2.5, 'mq135');
         // Green DHT11 Climate Signal Wire (-> GPIO 4)
         add3DWire([ 48, lidY - 4, -24], [-12, baseY - 4, 14], '#10b981', 2.5, 'dht11');
-        // Orange SW-520D Tilt Signal Wire (-> GPIO 18)
-        add3DWire([ 38, baseY - 3, 22], [  4, baseY - 4, 14], '#f97316', 2.5, 'tilt');
         // Red Buzzer Trigger Wire (-> GPIO 23)
         add3DWire([ 48, lidY - 4, 28], [  8, baseY - 4, 14], '#f43f5e', 2.5, 'buzzer');
       }
@@ -1758,7 +1631,6 @@ void loop() {
       add3DCallout([48, lidY - 22, -24], '🌡️ DHT11 (Климат)', 'GPIO 4', 'dht11', '#06b6d4');
       add3DCallout([48, lidY - 20, 28], '🔊 Зуммер 85 dB', 'GPIO 23', 'buzzer', '#ef4444');
       add3DCallout([-18, baseY - 14, 2], '⚡ ESP32 DevKit v1', '240 MHz SoftAP', 'esp32', '#10b981');
-      add3DCallout([38, baseY - 16, 22], '📐 SW-520D (Обвал)', 'GPIO 18', 'tilt', '#f59e0b');
       add3DCallout([-baseW/2 - 14, baseY + 6, 12], '🔌 Ввод PG-9', 'IP65 гермоввод', 'casing', '#64748b');
 
       // ==========================================
