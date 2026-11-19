@@ -4,7 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IoT Coal Mine Safety Monitoring & Real-Time Alerting System</title>
-  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <script>
+    // Offline local tailwind loader fallback
+    const script = document.createElement('script');
+    script.src = window.location.protocol === 'file:' ? 'tailwindcss.min.js' : 'https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js';
+    script.onerror = () => {
+      const cdn = document.createElement('script');
+      cdn.src = 'https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js';
+      document.head.appendChild(cdn);
+    };
+    document.head.appendChild(script);
+  </script>
   <style>
     @font-face {
       font-family: 'Segment7';
@@ -164,14 +174,14 @@
               </div>
             </div>
             <div id="gas-status-text" class="text-xs font-semibold text-emerald-400 mt-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              Безопасная концентрация (&lt; 300)
+              Безопасная концентрация (&lt; 500)
             </div>
           </div>
 
           <div class="text-[11px] text-slate-400 space-y-1 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60 font-mono-tech">
-            <div class="flex justify-between"><span>Норма:</span> <span class="text-emerald-400">0 - 300 ppm</span></div>
-            <div class="flex justify-between"><span>Повышенный:</span> <span class="text-amber-400">300 - 700 ppm</span></div>
-            <div class="flex justify-between"><span>Критический (Тревога):</span> <span class="text-rose-400">&gt; 700 ppm</span></div>
+            <div class="flex justify-between"><span>Норма:</span> <span class="text-emerald-400">0 - 500 ppm</span></div>
+            <div class="flex justify-between"><span>Повышенный:</span> <span class="text-amber-400">500 - 1000 ppm</span></div>
+            <div class="flex justify-between"><span>Критический (Тревога):</span> <span class="text-rose-400">&gt; 1000 ppm</span></div>
           </div>
         </div>
 
@@ -210,9 +220,9 @@
           </div>
 
           <div class="text-[11px] text-slate-400 space-y-1 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60 font-mono-tech">
-            <div class="flex justify-between"><span>Тепловой порог:</span> <span class="text-amber-400">&gt; 35 °C (Вентиляция)</span></div>
-            <div class="flex justify-between"><span>Влажность шахты:</span> <span class="text-cyan-400">40% - 75% (Оптимально)</span></div>
-            <div class="flex justify-between"><span>Опасность перегрева:</span> <span class="text-rose-400">&gt; 42 °C</span></div>
+            <div class="flex justify-between"><span>Порог перегрева:</span> <span class="text-amber-400">&gt; 28 °C (Тревога)</span></div>
+            <div class="flex justify-between"><span>Порог влажности:</span> <span class="text-cyan-400">&gt; 75% (Тревога)</span></div>
+            <div class="flex justify-between"><span>Статус климата:</span> <span class="text-emerald-400">В норме</span></div>
           </div>
         </div>
       </div>
@@ -281,25 +291,31 @@
             </h3>
             <p class="text-xs text-slate-400">Изменяйте ползунки, чтобы прямо во время речи продемонстрировать реакцию системы на аварию!</p>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <button onclick="setScenario('safe')" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 font-semibold transition">
               Сценарий: Норма
             </button>
             <button onclick="setScenario('gas')" class="text-xs px-3 py-1.5 rounded-lg bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 border border-rose-500/40 font-semibold transition">
-              Сценарий: Утечка Метана
+              Газ &gt; 1000 PPM
+            </button>
+            <button onclick="setScenario('temp')" class="text-xs px-3 py-1.5 rounded-lg bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 font-semibold transition">
+              Темп &gt; 28 °C
+            </button>
+            <button onclick="setScenario('hum')" class="text-xs px-3 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 border border-cyan-500/40 font-semibold transition">
+              Влажность &gt; 75%
             </button>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
           <!-- Gas Slider -->
           <div class="space-y-1.5">
             <div class="flex justify-between text-xs font-semibold">
               <span class="text-rose-400">Газ MQ-135 (PPM)</span>
               <span id="slider-gas-val" class="font-mono-tech text-slate-200">185 ppm</span>
             </div>
-            <input type="range" id="slider-gas" min="50" max="1000" value="185" oninput="manualOverride()" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-500">
-            <span class="text-[11px] text-slate-400 block font-mono-tech">&gt; 700 ppm активирует эвакуацию</span>
+            <input type="range" id="slider-gas" min="50" max="2000" value="185" oninput="manualOverride()" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-500">
+            <span class="text-[11px] text-slate-400 block font-mono-tech">&gt; 1000 ppm активирует эвакуацию</span>
           </div>
 
           <!-- Temp Slider -->
@@ -308,11 +324,19 @@
               <span class="text-amber-400">Температура DHT11 (°C)</span>
               <span id="slider-temp-val" class="font-mono-tech text-slate-200">23.8 °C</span>
             </div>
-            <input type="range" id="slider-temp" min="10" max="60" step="0.5" value="23.8" oninput="manualOverride()" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
-            <span class="text-[11px] text-slate-400 block font-mono-tech">&gt; 38 °C вызывает перегрев забоя</span>
+            <input type="range" id="slider-temp" min="10" max="50" step="0.5" value="23.8" oninput="manualOverride()" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+            <span class="text-[11px] text-slate-400 block font-mono-tech">&gt; 28 °C тревога перегрева</span>
           </div>
 
-
+          <!-- Humidity Slider -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="text-cyan-400">Влажность DHT11 (%)</span>
+              <span id="slider-hum-val" class="font-mono-tech text-slate-200">62 %</span>
+            </div>
+            <input type="range" id="slider-hum" min="10" max="100" value="62" oninput="manualOverride()" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+            <span class="text-[11px] text-slate-400 block font-mono-tech">&gt; 75 % превышение влажности</span>
+          </div>
         </div>
       </div>
 
@@ -634,8 +658,8 @@ void loop() {
     if (!isnan(h)) humidity = h;
 
     // 4. Determine Critical Alarm Conditions
-    bool gasAlert = (gasPPM &gt; 700.0);
-    bool tempAlert = (temperature &gt; 38.0);
+    bool gasAlert = (gasPPM &gt; 1000.0);
+    bool tempAlert = (temperature &gt; 28.0);
     isAlarm = (gasAlert || tempAlert);
 
     // 5. Trigger Physical Active Buzzer
@@ -747,12 +771,13 @@ void loop() {
         }
       }
 
-      // Check Hazard Thresholds
-      const isGasDanger = telemetry.gas > 700;
-      const isGasWarning = telemetry.gas > 300;
-      const isTempDanger = telemetry.temp > 38;
+      // Check Hazard Thresholds (Gas > 1000 ppm, Temp > 28 C, Hum > 75%)
+      const isGasDanger = telemetry.gas > 1000;
+      const isGasWarning = telemetry.gas > 500;
+      const isTempDanger = telemetry.temp > 28;
+      const isHumDanger = telemetry.hum > 75;
       
-      const isCritical = isGasDanger || isTempDanger;
+      const isCritical = isGasDanger || isTempDanger || isHumDanger;
       telemetry.buzzer = isCritical;
 
       // Update Status Badge
@@ -766,11 +791,11 @@ void loop() {
         statusBadge.className = "text-base font-bold text-rose-500 flex items-center gap-1.5 mt-0.5";
         alarmBanner.classList.remove('hidden');
 
-        if (isGasDanger) {
-          alarmText.innerText = "ТРЕВОГА: ПРЕВЫШЕНИЕ ПДК МЕТАНА / CO В ЗАБОЕ (MQ-135 > 700 PPM)!";
-        } else {
-          alarmText.innerText = "ТРЕВОГА: КРИТИЧЕСКИЙ ПЕРЕГРЕВ ЗАБОЯ (DHT11 > 38°C)!";
-        }
+        let alertMsgs = [];
+        if (isGasDanger) alertMsgs.push("ГАЗ > 1000 PPM");
+        if (isTempDanger) alertMsgs.push("ТЕМП > 28°C");
+        if (isHumDanger) alertMsgs.push("ВЛАЖНОСТЬ > 75%");
+        alarmText.innerText = "ТРЕВОГА: " + alertMsgs.join(" | ") + "!";
 
         playAlarmTone();
       } else if (isGasWarning) {
@@ -801,21 +826,21 @@ void loop() {
       document.getElementById('val-hum').innerText = Math.round(telemetry.hum);
 
       // Gas Gauge Ring (314 is full stroke)
-      const gasOffset = 314 - Math.min(314, (telemetry.gas / 1000) * 314);
+      const gasOffset = 314 - Math.min(314, (telemetry.gas / 1500) * 314);
       const gasRing = document.getElementById('gas-ring');
       gasRing.setAttribute('stroke-dashoffset', gasOffset);
       if (isGasDanger) {
         gasRing.setAttribute('stroke', '#ef4444');
         document.getElementById('gas-status-text').className = "text-xs font-semibold text-rose-400 mt-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20";
-        document.getElementById('gas-status-text').innerText = "ОПАСНАЯ КОНЦЕНТРАЦИЯ (> 700)";
+        document.getElementById('gas-status-text').innerText = "ОПАСНАЯ КОНЦЕНТРАЦИЯ (> 1000 PPM)";
       } else if (isGasWarning) {
         gasRing.setAttribute('stroke', '#f59e0b');
         document.getElementById('gas-status-text').className = "text-xs font-semibold text-amber-400 mt-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20";
-        document.getElementById('gas-status-text').innerText = "Повышенный уровень (300-700)";
+        document.getElementById('gas-status-text').innerText = "Повышенный уровень (500-1000 PPM)";
       } else {
         gasRing.setAttribute('stroke', '#10b981');
         document.getElementById('gas-status-text').className = "text-xs font-semibold text-emerald-400 mt-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20";
-        document.getElementById('gas-status-text').innerText = "Безопасная концентрация (< 300)";
+        document.getElementById('gas-status-text').innerText = "Безопасная концентрация (< 500 PPM)";
       }
 
       // Temp bar
@@ -937,20 +962,37 @@ void loop() {
 
       const gasVal = parseFloat(document.getElementById('slider-gas').value);
       const tempVal = parseFloat(document.getElementById('slider-temp').value);
+      const humSlider = document.getElementById('slider-hum');
+      const humVal = humSlider ? parseFloat(humSlider.value) : telemetry.hum;
       telemetry.gas = gasVal;
       telemetry.temp = tempVal;
+      telemetry.hum = humVal;
       document.getElementById('slider-gas-val').innerText = Math.round(gasVal) + ' ppm';
       document.getElementById('slider-temp-val').innerText = tempVal.toFixed(1) + ' °C';
+      if (document.getElementById('slider-hum-val')) {
+        document.getElementById('slider-hum-val').innerText = Math.round(humVal) + ' %';
+      }
       tick();
     }
 
     function setScenario(type) {
+      const humSlider = document.getElementById('slider-hum');
       if (type === 'safe') {
         document.getElementById('slider-gas').value = 180;
         document.getElementById('slider-temp').value = 24.0;
+        if (humSlider) humSlider.value = 55;
       } else if (type === 'gas') {
-        document.getElementById('slider-gas').value = 850;
-        document.getElementById('slider-temp').value = 25.5;
+        document.getElementById('slider-gas').value = 1250;
+        document.getElementById('slider-temp').value = 24.5;
+        if (humSlider) humSlider.value = 58;
+      } else if (type === 'temp') {
+        document.getElementById('slider-gas').value = 220;
+        document.getElementById('slider-temp').value = 31.5;
+        if (humSlider) humSlider.value = 52;
+      } else if (type === 'hum') {
+        document.getElementById('slider-gas').value = 200;
+        document.getElementById('slider-temp').value = 24.0;
+        if (humSlider) humSlider.value = 85;
       }
       manualOverride();
     }
