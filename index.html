@@ -1,0 +1,1929 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IoT Coal Mine Safety Monitoring & Real-Time Alerting System</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @font-face {
+      font-family: 'Segment7';
+      src: local('Courier New'), monospace;
+    }
+    .font-mono-tech {
+      font-family: 'SF Mono', 'Roboto Mono', 'Courier New', monospace;
+    }
+    .lcd-glow {
+      background: #0f2d5c;
+      color: #9cd5ff;
+      text-shadow: 0 0 6px rgba(156, 213, 255, 0.8), 0 0 12px rgba(45, 125, 255, 0.5);
+      box-shadow: inset 0 0 16px rgba(0,0,0,0.85);
+    }
+    .alarm-flash {
+      animation: alarmBlink 0.7s infinite alternate;
+    }
+    @keyframes alarmBlink {
+      from { background-color: rgba(220, 38, 38, 0.95); box-shadow: 0 0 25px rgba(239, 68, 68, 0.9); }
+      to { background-color: rgba(153, 27, 27, 0.4); box-shadow: 0 0 5px rgba(239, 68, 68, 0.3); }
+    }
+    .radar-sweep {
+      background: conic-gradient(from 0deg, transparent 0deg, rgba(16, 185, 129, 0.25) 60deg, transparent 61deg);
+      animation: radarRotate 3s linear infinite;
+    }
+    @keyframes radarRotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 antialiased min-h-screen p-3 md:p-6 font-sans">
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Top Navigation & Header -->
+    <header class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 md:p-6 shadow-2xl backdrop-blur flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="relative flex h-3.5 w-3.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
+          </span>
+          <span class="text-xs uppercase tracking-widest font-mono-tech px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            Wi-Fi AP: ESP32_MINE_SAFETY (192.168.4.1)
+          </span>
+          <span class="text-xs uppercase tracking-widest font-mono-tech px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            Rate: 500 ms JSON Stream
+          </span>
+        </div>
+        <h1 class="text-xl md:text-2xl font-bold tracking-tight text-white mt-2">
+          IoT-Based Coal Mine Safety Monitoring & Real-Time Alerting System
+        </h1>
+        <p class="text-xs md:text-sm text-slate-400">
+          Защита дипломного / курсового проекта • Полнофункциональный Full-Stack комплекс (Hardware + Web Dashboard + 3D)
+        </p>
+      </div>
+
+      <!-- Tab Buttons -->
+      <nav class="flex flex-wrap gap-2">
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-3.5 py-2 text-xs md:text-sm font-semibold rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/20 border border-blue-400/30 transition">
+          💻 Web Dashboard (192.168.4.1)
+        </button>
+        <button onclick="switchTab('3dmodel')" id="tab-3dmodel" class="px-3.5 py-2 text-xs md:text-sm font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          📦 Интерактивная 3D-модель
+        </button>
+        <button onclick="switchTab('firmware')" id="tab-firmware" class="px-3.5 py-2 text-xs md:text-sm font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          ⚡ Код прошивки (ESP32)
+        </button>
+      </nav>
+    </header>
+
+    <!-- TAB 1: WEB DASHBOARD (Dispatcher Application) -->
+    <div id="view-dashboard" class="space-y-6">
+
+      <!-- Critical Alert Banner (Shown during hazard) -->
+      <div id="alarm-banner" class="hidden rounded-2xl p-4 md:p-5 text-white font-bold text-center tracking-wide shadow-2xl transition-all duration-300 alarm-flash">
+        <div class="flex items-center justify-center gap-3 text-lg md:text-xl">
+          <svg class="w-8 h-8 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+          <span id="alarm-text">ВНИМАНИЕ! КРИТИЧЕСКАЯ ОПАСНОСТЬ В ЗАБОЕ ШАХТЫ! ЭВАКУАЦИЯ!</span>
+        </div>
+        <p class="text-xs font-normal opacity-90 mt-1">Зуммер ESP32 активирован • Данные зафиксированы в диспетчерском протоколе</p>
+      </div>
+
+      <!-- Quick Status Badges -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+          <div>
+            <div class="text-[11px] uppercase tracking-wider text-slate-400 font-mono-tech">Статус системы</div>
+            <div id="badge-status" class="text-base font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Норма
+            </div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+          <div>
+            <div class="text-[11px] uppercase tracking-wider text-slate-400 font-mono-tech">Связь Wi-Fi</div>
+            <div class="text-base font-bold text-cyan-400 flex items-center gap-1.5 mt-0.5">
+              <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> 192.168.4.1
+            </div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path></svg>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+          <div>
+            <div class="text-[11px] uppercase tracking-wider text-slate-400 font-mono-tech">Активный зуммер</div>
+            <div id="badge-buzzer" class="text-base font-bold text-slate-400 flex items-center gap-1.5 mt-0.5">
+              <span class="w-2 h-2 rounded-full bg-slate-500"></span> Безмолвный
+            </div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-slate-800 text-slate-400 border border-slate-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+          <div>
+            <div class="text-[11px] uppercase tracking-wider text-slate-400 font-mono-tech">Обновление пакета</div>
+            <div id="badge-timer" class="text-base font-bold text-amber-400 font-mono-tech mt-0.5">
+              500 мс (0.5s)
+            </div>
+          </div>
+          <div class="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Sensor Metrics Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+        <!-- Sensor 1: MQ-135 Gas Sensor -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+              <h3 class="font-bold text-slate-100">MQ-135 Газоанализатор</h3>
+            </div>
+            <span class="text-[10px] font-mono-tech bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">Пин D34 (ADC1)</span>
+          </div>
+
+          <div class="my-5 flex flex-col items-center">
+            <div class="relative w-40 h-40 flex items-center justify-center">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" stroke="#1e293b" stroke-width="10" fill="none" />
+                <circle id="gas-ring" cx="60" cy="60" r="50" stroke="#10b981" stroke-width="10" stroke-dasharray="314" stroke-dashoffset="230" stroke-linecap="round" fill="none" class="transition-all duration-300" />
+              </svg>
+              <div class="absolute flex flex-col items-center text-center">
+                <span id="val-gas" class="text-3xl font-black font-mono-tech text-white">185</span>
+                <span class="text-xs text-slate-400 font-semibold">PPM (CO/CH₄)</span>
+              </div>
+            </div>
+            <div id="gas-status-text" class="text-xs font-semibold text-emerald-400 mt-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+              Безопасная концентрация (&lt; 300)
+            </div>
+          </div>
+
+          <div class="text-[11px] text-slate-400 space-y-1 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60 font-mono-tech">
+            <div class="flex justify-between"><span>Норма:</span> <span class="text-emerald-400">0 - 300 ppm</span></div>
+            <div class="flex justify-between"><span>Повышенный:</span> <span class="text-amber-400">300 - 700 ppm</span></div>
+            <div class="flex justify-between"><span>Критический (Тревога):</span> <span class="text-rose-400">&gt; 700 ppm</span></div>
+          </div>
+        </div>
+
+        <!-- Sensor 2: DHT11 Temp & Humidity -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+              <h3 class="font-bold text-slate-100">DHT11 Микроклимат</h3>
+            </div>
+            <span class="text-[10px] font-mono-tech bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">Пин D4 (OneWire)</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 my-4">
+            <div class="bg-slate-950/70 border border-slate-800 p-4 rounded-xl flex flex-col items-center justify-center">
+              <span class="text-xs text-slate-400 font-semibold mb-1">Температура</span>
+              <div class="flex items-baseline gap-1">
+                <span id="val-temp" class="text-3xl font-black font-mono-tech text-amber-400">23.8</span>
+                <span class="text-sm text-slate-400 font-bold">°C</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
+                <div id="bar-temp" class="bg-amber-500 h-full rounded-full transition-all duration-300" style="width: 45%;"></div>
+              </div>
+            </div>
+
+            <div class="bg-slate-950/70 border border-slate-800 p-4 rounded-xl flex flex-col items-center justify-center">
+              <span class="text-xs text-slate-400 font-semibold mb-1">Влажность</span>
+              <div class="flex items-baseline gap-1">
+                <span id="val-hum" class="text-3xl font-black font-mono-tech text-cyan-400">62</span>
+                <span class="text-sm text-slate-400 font-bold">%</span>
+              </div>
+              <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
+                <div id="bar-hum" class="bg-cyan-500 h-full rounded-full transition-all duration-300" style="width: 62%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-[11px] text-slate-400 space-y-1 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60 font-mono-tech">
+            <div class="flex justify-between"><span>Тепловой порог:</span> <span class="text-amber-400">&gt; 35 °C (Вентиляция)</span></div>
+            <div class="flex justify-between"><span>Влажность шахты:</span> <span class="text-cyan-400">40% - 75% (Оптимально)</span></div>
+            <div class="flex justify-between"><span>Опасность перегрева:</span> <span class="text-rose-400">&gt; 42 °C</span></div>
+          </div>
+        </div>
+
+        <!-- Sensor 3: SW-520D Tilt & Cave-in Sensor -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+              <h3 class="font-bold text-slate-100">SW-520D Датчик обвала</h3>
+            </div>
+            <span class="text-[10px] font-mono-tech bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">Пин D18 (Pullup)</span>
+          </div>
+
+          <div class="my-4 flex flex-col items-center">
+            <!-- Simulated Visual Inclinometer / Bubble Level -->
+            <div class="w-36 h-36 rounded-full border-4 border-slate-700 bg-slate-950 flex items-center justify-center relative shadow-inner">
+              <div class="w-full h-[1px] bg-slate-800 absolute"></div>
+              <div class="h-full w-[1px] bg-slate-800 absolute"></div>
+              <div class="w-20 h-20 rounded-full border border-dashed border-slate-700 absolute"></div>
+              <!-- Moving Bubble -->
+              <div id="tilt-bubble" class="w-7 h-7 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 transition-all duration-300 flex items-center justify-center">
+                <div class="w-2 h-2 rounded-full bg-white opacity-80"></div>
+              </div>
+            </div>
+
+            <div id="tilt-status-badge" class="text-xs font-semibold text-emerald-400 mt-3 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+              Кровля стабильна (Уклон 0°)
+            </div>
+          </div>
+
+          <div class="text-[11px] text-slate-400 space-y-1 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60 font-mono-tech">
+            <div class="flex justify-between"><span>Смещение крепи:</span> <span id="tilt-angle-text" class="text-slate-200">В норме (&lt;15°)</span></div>
+            <div class="flex justify-between"><span>Риск обрушения:</span> <span id="tilt-risk-text" class="text-emerald-400">Отсутствует</span></div>
+            <div class="flex justify-between"><span>Ударная вибрация:</span> <span class="text-slate-200">Низкая</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Real-Time Telemetry Graph & Simulated Hardware LCD 1602 Display -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        
+        <!-- Live Canvas Graph (2 cols) -->
+        <div class="lg:col-span-2 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <h3 class="font-bold text-slate-100 text-sm md:text-base">Живой поток телеметрии (Real-Time JSON Stream / 500 ms)</h3>
+            </div>
+            <div class="flex items-center gap-3 text-xs font-mono-tech">
+              <span class="flex items-center gap-1 text-rose-400"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Газ MQ-135</span>
+              <span class="flex items-center gap-1 text-amber-400"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Темп DHT11</span>
+            </div>
+          </div>
+
+          <div class="relative w-full h-56 mt-4">
+            <canvas id="telemetryCanvas" class="w-full h-full rounded-xl bg-slate-950 border border-slate-800/80"></canvas>
+          </div>
+
+          <div class="mt-3 flex items-center justify-between text-xs text-slate-400 font-mono-tech">
+            <span>Буфер: 60 последних отсчетов</span>
+            <span id="json-preview">JSON: {"gas":185,"temp":23.8,"hum":62,"tilt":0,"buzzer":0}</span>
+          </div>
+        </div>
+
+        <!-- Physical On-Device LCD 16x2 Display Emulator -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="font-bold text-slate-100 text-sm md:text-base">Эмулятор LCD 1602 (I2C 0x27)</h3>
+            <span class="text-[10px] font-mono-tech bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">SDA: D21 / SCL: D22</span>
+          </div>
+
+          <div class="my-4 p-4 rounded-xl bg-slate-950 border-4 border-slate-800 shadow-2xl flex flex-col items-center">
+            <div class="lcd-glow rounded-lg p-4 w-full font-mono text-base tracking-widest font-bold select-none border border-blue-500/40">
+              <div id="lcd-row-0" class="leading-relaxed">GAS: 185ppm NORM</div>
+              <div id="lcd-row-1" class="leading-relaxed mt-1">T:23.8C H:62% OK</div>
+            </div>
+            <span class="text-[11px] text-slate-400 font-mono-tech mt-2">Локальный экран шахтного модуля на месте</span>
+          </div>
+
+          <!-- Live Alarm Audio Trigger -->
+          <div class="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+            <div class="text-xs">
+              <span class="font-bold text-slate-200 block">Звуковая сирена (Buzzer):</span>
+              <span id="audio-status-label" class="text-slate-400 text-[11px]">Звук включен (при тревоге)</span>
+            </div>
+            <button onclick="toggleSoundMute()" id="btn-sound-toggle" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold transition">
+              🔊 Тест сирены
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Oral Exam Interactive Demo Controller (For Jury Demonstration!) -->
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950/60 border border-indigo-500/30 rounded-2xl p-5 shadow-2xl space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+          <div>
+            <h3 class="font-bold text-base text-white flex items-center gap-2">
+              <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+              Пульт управления демонстрацией перед комиссией (Simulate & Live ESP32 Switch)
+            </h3>
+            <p class="text-xs text-slate-400">Изменяйте ползунки, чтобы прямо во время речи продемонстрировать реакцию системы на аварию!</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="setScenario('safe')" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 font-semibold transition">
+              Сценарий: Норма
+            </button>
+            <button onclick="setScenario('gas')" class="text-xs px-3 py-1.5 rounded-lg bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 border border-rose-500/40 font-semibold transition">
+              Сценарий: Утечка Метана
+            </button>
+            <button onclick="setScenario('tilt')" class="text-xs px-3 py-1.5 rounded-lg bg-purple-600/30 hover:bg-purple-600/50 text-purple-300 border border-purple-500/40 font-semibold transition">
+              Сценарий: Обвал крепи
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+          <!-- Gas Slider -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="text-rose-400">Газ MQ-135 (PPM)</span>
+              <span id="slider-gas-val" class="font-mono-tech text-slate-200">185 ppm</span>
+            </div>
+            <input type="range" id="slider-gas" min="50" max="1000" value="185" oninput="manualOverride()" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-500">
+            <span class="text-[11px] text-slate-400 block font-mono-tech">&gt; 700 ppm активирует эвакуацию</span>
+          </div>
+
+          <!-- Temp Slider -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="text-amber-400">Температура DHT11 (°C)</span>
+              <span id="slider-temp-val" class="font-mono-tech text-slate-200">23.8 °C</span>
+            </div>
+            <input type="range" id="slider-temp" min="10" max="60" step="0.5" value="23.8" oninput="manualOverride()" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+            <span class="text-[11px] text-slate-400 block font-mono-tech">&gt; 38 °C вызывает перегрев забоя</span>
+          </div>
+
+          <!-- Tilt Switch Toggle -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs font-semibold">
+              <span class="text-purple-400">SW-520D (Смещение/Обвал)</span>
+              <span id="slider-tilt-val" class="font-mono-tech text-slate-200">Норма (0°)</span>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="setTiltState(0)" id="btn-tilt-0" class="flex-1 py-1 text-xs font-bold rounded-lg bg-emerald-600 text-white border border-emerald-400 transition">Норма (0°)</button>
+              <button onclick="setTiltState(1)" id="btn-tilt-1" class="flex-1 py-1 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">Наклон / Обвал (45°)</button>
+            </div>
+            <span class="text-[11px] text-slate-400 block font-mono-tech">Шарик замыкает контакт при сдвиге породы</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: INTERACTIVE 3D ENCLOSURE & COMPONENTS MODEL -->
+    <div id="view-3dmodel" class="hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 md:p-6 shadow-2xl space-y-5">
+        
+        <!-- Header & Quick Controls -->
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
+              <h2 class="text-lg md:text-xl font-bold text-white">
+                Инженерная 3D-модель защитного корпуса и размещения компонентов (AutoCAD / Tinkercad 3D)
+              </h2>
+            </div>
+            <p class="text-xs md:text-sm text-slate-400 mt-1">
+              Промышленный взрывобезопасный корпус IP65 (140×100×52 мм). Вращайте мышкой 360°, переключайте ракурсы и разбирайте на детали!
+            </p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="downloadSTL()" class="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 transition shadow-lg shadow-emerald-600/20">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+              <span>📥 Скачать STL для 3D-печати</span>
+            </button>
+            <button onclick="toggle3DLabels()" id="btn-3dlabels" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-blue-600 text-white border border-blue-400 transition">🏷️ 3D Метки</button>
+            <button onclick="toggleXRayView()" id="btn-xray" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+              🔍 Рентген / Прозрачный
+            </button>
+            <button onclick="toggleAutoRotate()" id="btn-autorotate" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+              🔄 Авто-вращение
+            </button>
+            <button onclick="reset3DCamera()" class="px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+              🎯 Сброс вида
+            </button>
+          </div>
+        </div>
+
+        <!-- Camera Angle Presets & Exploded View Slider Bar -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/80 p-3.5 rounded-xl border border-slate-800">
+          <!-- Camera Presets -->
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono-tech text-slate-400 font-semibold whitespace-nowrap">Ракурс камеры:</span>
+            <div class="flex flex-wrap gap-1.5">
+              <button onclick="set3DCameraAngle('iso')" id="cam-iso" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-600 text-white border border-blue-400/30 transition">📐 Изометрия</button>
+              <button onclick="set3DCameraAngle('top')" id="cam-top" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition">🔝 Сверху (Лицо)</button>
+              <button onclick="set3DCameraAngle('front')" id="cam-front" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition">↔️ Спереди</button>
+              <button onclick="set3DCameraAngle('side')" id="cam-side" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition">🔌 Сбоку (USB)</button>
+            </div>
+          </div>
+
+          <!-- Smooth Exploded View Slider -->
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-mono-tech text-amber-400 font-bold whitespace-nowrap">💥 Взрыв-схема:</span>
+            <input type="range" id="slider-explode" min="0" max="100" value="0" oninput="onExplodeSlider(this.value)" class="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+            <span id="explode-pct-label" class="text-xs font-mono-tech text-slate-300 font-bold w-12 text-right">0%</span>
+          </div>
+        </div>
+
+        <!-- 3D Canvas Viewport + Interactive Component Inspector -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-5">
+          
+          <!-- Viewport (3 cols) -->
+          <div class="lg:col-span-3 relative h-[480px] bg-slate-950 rounded-2xl border border-slate-800/80 overflow-hidden shadow-inner cursor-grab active:cursor-grabbing flex items-center justify-center">
+            <canvas id="canvas3d" class="w-full h-full block"></canvas>
+            
+            <!-- Viewport Overlay HUD -->
+            <div class="absolute top-3 left-3 pointer-events-none space-y-1 font-mono-tech text-[11px] bg-slate-900/85 p-3 rounded-xl border border-slate-800 backdrop-blur shadow-lg">
+              <div class="text-amber-400 font-bold">MINE-SAFETY-ENCLOSURE v3.0</div>
+              <div class="text-slate-300">Габариты: 140 × 100 × 52 мм (Стенка 3 мм)</div>
+              <div class="text-slate-400">Стандарт: IP65 / Взрывозащита ATEX Ex ia</div>
+              <div id="hud-mode-text" class="text-emerald-400 font-semibold">Сборка: В сборе (0%)</div>
+            </div>
+
+            <!-- On-Screen Component Selectors -->
+            <div class="absolute top-3 right-3 flex flex-col gap-1.5 text-[11px] font-mono-tech">
+              <span class="text-[10px] text-slate-400 font-semibold text-right uppercase tracking-wider">Инспектор детали:</span>
+              <button onclick="select3DComponent('lcd')" class="px-2.5 py-1 rounded-lg bg-slate-900/90 text-blue-400 hover:bg-slate-800 border border-slate-800 text-right backdrop-blur transition">📺 Дисплей LCD 1602</button>
+              <button onclick="select3DComponent('mq135')" class="px-2.5 py-1 rounded-lg bg-slate-900/90 text-slate-300 hover:bg-slate-800 border border-slate-800 text-right backdrop-blur transition">💨 Газ MQ-135</button>
+              <button onclick="select3DComponent('dht11')" class="px-2.5 py-1 rounded-lg bg-slate-900/90 text-cyan-400 hover:bg-slate-800 border border-slate-800 text-right backdrop-blur transition">🌡️ Климат DHT11</button>
+              <button onclick="select3DComponent('esp32')" class="px-2.5 py-1 rounded-lg bg-slate-900/90 text-emerald-400 hover:bg-slate-800 border border-slate-800 text-right backdrop-blur transition">⚡ МК ESP32 DevKit</button>
+              <button onclick="select3DComponent('tilt')" class="px-2.5 py-1 rounded-lg bg-slate-900/90 text-yellow-400 hover:bg-slate-800 border border-slate-800 text-right backdrop-blur transition">📐 Уклон SW-520D</button>
+              <button onclick="select3DComponent('buzzer')" class="px-2.5 py-1 rounded-lg bg-slate-900/90 text-rose-400 hover:bg-slate-800 border border-slate-800 text-right backdrop-blur transition">🔊 Зуммер 85 dB</button>
+              <button onclick="select3DComponent('casing')" class="px-2.5 py-1 rounded-lg bg-slate-900/90 text-amber-400 hover:bg-slate-800 border border-slate-800 text-right backdrop-blur transition">🛡️ Корпус IP65</button>
+            </div>
+
+            <!-- Legend Overlay -->
+            <div class="absolute bottom-3 right-3 pointer-events-none flex flex-wrap gap-2 text-[10px] font-mono-tech bg-slate-900/85 p-2 rounded-xl border border-slate-800 backdrop-blur">
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-500"></span> Корпус ABS</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-blue-500"></span> LCD 1602</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-slate-300"></span> Сетка MQ-135</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-cyan-400"></span> DHT11</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-yellow-400"></span> SW-520D</span>
+              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-emerald-500"></span> ESP32</span>
+            </div>
+          </div>
+
+          <!-- Component Inspector Details Card (1 col) -->
+          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4">
+            <div>
+              <div class="text-[11px] uppercase tracking-wider text-amber-400 font-mono-tech font-bold flex items-center justify-between border-b border-slate-800 pb-2">
+                <span>Карточка узла</span>
+                <span id="inspector-chip-tag" class="bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 text-[10px]">Выбран узел</span>
+              </div>
+              <h3 id="inspector-title" class="text-base font-bold text-white mt-2.5">LCD 1602 I2C Display</h3>
+              <p id="inspector-desc" class="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                Экран с синей подсветкой и встроенным I2C-адаптером (PCF8574). Монтируется в центральный вырез лицевой панели 71.3×26.3 мм.
+              </p>
+            </div>
+
+            <div class="space-y-2 text-xs font-mono-tech bg-slate-900/70 p-3 rounded-xl border border-slate-800/80">
+              <div class="flex justify-between"><span class="text-slate-400">Пин на ESP32:</span> <span id="inspector-pin" class="text-cyan-400 font-bold">SDA:D21, SCL:D22</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">Питание:</span> <span id="inspector-pwr" class="text-slate-200">5V (VIN)</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">Протокол:</span> <span id="inspector-proto" class="text-slate-200">I2C (0x27)</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">Назначение:</span> <span id="inspector-role" class="text-emerald-400 font-bold">Локальная индикация</span></div>
+            </div>
+
+            <div class="bg-slate-900/40 p-2.5 rounded-lg border border-slate-800/60 text-[11px] text-slate-400">
+              💡 <span id="inspector-tip">Защищен акриловым ударопрочным стеклом толщиной 2 мм для защиты матрицы от пыли и осколков.</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Technical Specification & Assembly Details Table -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <h4 class="font-bold text-amber-400 uppercase tracking-wider text-xs">Чертежные размеры для Tinkercad 3D / AutoCAD</h4>
+            <ul class="space-y-1.5 text-slate-300 font-mono-tech">
+              <li>• <strong>Внешние размеры корпуса:</strong> Длина 140 мм, Ширина 100 мм, Высота 52 мм (толщина стенок 3 мм).</li>
+              <li>• <strong>Окно экрана LCD 1602:</strong> 71.3 × 26.3 мм на лицевой панели под акриловую вставку.</li>
+              <li>• <strong>Вентиляция MQ-135:</strong> Круглая выемка диаметром 20.5 мм с антипылевой сеткой.</li>
+              <li>• <strong>Жалюзи для DHT11:</strong> 4 прорези 18 × 2 мм для свободного протока рудничного воздуха.</li>
+              <li>• <strong>Отверстие пьезобузера:</strong> 6 отверстий диаметром 2 мм (акустическая решетка).</li>
+            </ul>
+          </div>
+
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <h4 class="font-bold text-cyan-400 uppercase tracking-wider text-xs">Инженерные решения для работы в шахте</h4>
+            <ul class="space-y-1.5 text-slate-300">
+              <li>• <strong>Искробезопасность:</strong> все контакты изолированы внутри компаунда, герметичный кабельный ввод PG-9.</li>
+              <li>• <strong>Демпфирование SW-520D:</strong> датчик наклона закреплен строго на несущей пластине с демпфером от случайных шагов.</li>
+              <li>• <strong>Модульность:</strong> верхняя крышка на 4 винтах М3 со сменными силиконовыми уплотнителями.</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <!-- TAB 3: ESP32 ARDUINO C++ FIRMWARE CODE -->
+    <div id="view-firmware" class="hidden space-y-6">
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 md:p-6 shadow-2xl space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div>
+            <h2 class="text-lg md:text-xl font-bold text-white flex items-center gap-2">
+              <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+              Полная прошивка ESP32 (Wi-Fi Access Point + HTTP Web Server + JSON API)
+            </h2>
+            <p class="text-xs md:text-sm text-slate-400">
+              Готовый код для прошивки через Arduino IDE. Содержит встроенный веб-сервер и выдает JSON-пакет каждые 500 мс на 192.168.4.1.
+            </p>
+          </div>
+          <button onclick="copyFirmwareCode()" class="px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-2 transition shadow-lg shadow-emerald-500/20">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            <span id="copy-firmware-btn-text">Скопировать весь код ESP32</span>
+          </button>
+        </div>
+
+        <pre class="bg-slate-950 text-slate-200 p-5 rounded-xl text-xs font-mono-tech overflow-x-auto max-h-[520px] border border-slate-800 leading-relaxed" id="firmware-code-block">/*
+  ==================================================================================
+  PROJECT: IoT-Based Coal Mine Safety Monitoring &amp; Real-Time Alerting System
+  MICROCONTROLLER: ESP32 DevKit v1 (30-pin)
+  SENSORS: MQ-135 (Gas), DHT11 (Temp/Hum), SW-520D (Tilt), LCD 1602 I2C, Active Buzzer
+  NETWORK: Built-in SoftAP (SSID: ESP32_MINE_SAFETY, IP: 192.168.4.1)
+  TELEMETRY: JSON REST API endpoint &quot;/data&quot; updated every 500 ms
+  ==================================================================================
+*/
+
+#include &lt;WiFi.h&gt;
+#include &lt;WebServer.h&gt;
+#include &lt;Wire.h&gt;
+#include &lt;LiquidCrystal_I2C.h&gt;
+#include &lt;DHT.h&gt;
+
+// --- PIN DEFINITIONS (Optimized for ESP32 DevKit v1) ---
+#define PIN_MQ135   34  // Analog Input (ADC1_CH6) - Never conflicts with Wi-Fi!
+#define PIN_DHT     4   // OneWire Digital for DHT11
+#define PIN_TILT    18  // Digital Input with internal PULLUP for SW-520D
+#define PIN_BUZZER  23  // Digital Output for Active Buzzer
+#define PIN_SDA     21  // Hardware I2C SDA for LCD 1602
+#define PIN_SCL     22  // Hardware I2C SCL for LCD 1602
+
+#define DHTTYPE     DHT11
+DHT dht(PIN_DHT, DHTTYPE);
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+WebServer server(80);
+
+// --- WI-FI ACCESS POINT CREDENTIALS ---
+const char* ssid = &quot;ESP32_MINE_SAFETY&quot;;
+const char* password = &quot;&quot;; // Open Access Point for instantaneous commission connection
+
+// --- GLOBAL TELEMETRY VARIABLES ---
+float gasPPM = 0.0;
+float temperature = 0.0;
+float humidity = 0.0;
+int isTilt = 0;
+bool isAlarm = false;
+unsigned long lastSampleTime = 0;
+const unsigned long SAMPLE_INTERVAL = 500; // 500 ms high-speed streaming
+
+// Embedded Web Dashboard HTML stored in Flash memory
+const char INDEX_HTML[] PROGMEM = R&quot;rawliteral(
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+  &lt;meta charset=&quot;UTF-8&quot;&gt;
+  &lt;title&gt;ESP32 Mine Safety&lt;/title&gt;
+  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1&quot;&gt;
+  &lt;style&gt;
+    body{font-family:Arial,sans-serif;background:#090d16;color:#fff;text-align:center;padding:20px}
+    .card{background:#131c2e;border:1px solid #233554;border-radius:12px;padding:15px;margin:10px auto;max-width:400px}
+    h2{color:#38bdf8}
+    .val{font-size:32px;font-weight:bold;margin:5px 0}
+    .danger{color:#ef4444}
+    .safe{color:#10b981}
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h2&gt;ESP32 Mine Safety Dashboard&lt;/h2&gt;
+  &lt;div class=&quot;card&quot;&gt;&lt;div&gt;Gas Level (MQ-135)&lt;/div&gt;&lt;div id=&quot;gas&quot; class=&quot;val&quot;&gt;--&lt;/div&gt;&lt;div&gt;PPM&lt;/div&gt;&lt;/div&gt;
+  &lt;div class=&quot;card&quot;&gt;&lt;div&gt;Temperature / Humidity&lt;/div&gt;&lt;div id=&quot;th&quot; class=&quot;val&quot;&gt;--&lt;/div&gt;&lt;/div&gt;
+  &lt;div class=&quot;card&quot;&gt;&lt;div&gt;Roof Tilt (SW-520D)&lt;/div&gt;&lt;div id=&quot;tilt&quot; class=&quot;val&quot;&gt;--&lt;/div&gt;&lt;/div&gt;
+  &lt;div class=&quot;card&quot;&gt;&lt;div&gt;Status&lt;/div&gt;&lt;div id=&quot;st&quot; class=&quot;val safe&quot;&gt;NORMAL&lt;/div&gt;&lt;/div&gt;
+  \&lt;script&gt;
+    setInterval(async () =&gt; {
+      try {
+        const res = await fetch(&#x27;/data&#x27;);
+        const d = await res.json();
+        document.getElementById(&#x27;gas&#x27;).innerText = d.gas_ppm;
+        document.getElementById(&#x27;th&#x27;).innerText = d.temp_c + &#x27; C / &#x27; + d.humidity + &#x27; %&#x27;;
+        document.getElementById(&#x27;tilt&#x27;).innerText = d.tilt ? &#x27;COLLAPSE RISK!&#x27; : &#x27;STABLE&#x27;;
+        document.getElementById(&#x27;st&#x27;).innerText = d.status;
+        document.getElementById(&#x27;st&#x27;).className = &#x27;val &#x27; + (d.alarm ? &#x27;danger&#x27; : &#x27;safe&#x27;);
+      } catch(e) {}
+    }, 500);
+  &lt;\/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+)rawliteral&quot;;
+
+void handleRoot() {
+  server.send_P(200, &quot;text/html&quot;, INDEX_HTML);
+}
+
+void handleData() {
+  // Construct real-time JSON packet
+  String json = &quot;{&quot;;
+  json += &quot;\\&quot;gas_ppm\\&quot;:&quot; + String(gasPPM, 0) + &quot;,&quot;;
+  json += &quot;\\&quot;temp_c\\&quot;:&quot; + String(temperature, 1) + &quot;,&quot;;
+  json += &quot;\\&quot;humidity\\&quot;:&quot; + String(humidity, 0) + &quot;,&quot;;
+  json += &quot;\\&quot;tilt\\&quot;:&quot; + String(isTilt) + &quot;,&quot;;
+  json += &quot;\\&quot;buzzer\\&quot;:&quot; + String(isAlarm ? 1 : 0) + &quot;,&quot;;
+  json += &quot;\\&quot;alarm\\&quot;:&quot; + String(isAlarm ? 1 : 0) + &quot;,&quot;;
+  json += &quot;\\&quot;status\\&quot;:\\&quot;&quot; + String(isAlarm ? &quot;CRITICAL HAZARD!&quot; : &quot;NORMAL&quot;) + &quot;\\&quot;&quot;;
+  json += &quot;}&quot;;
+
+  server.sendHeader(&quot;Access-Control-Allow-Origin&quot;, &quot;*&quot;);
+  server.send(200, &quot;application/json&quot;, json);
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize GPIOs
+  pinMode(PIN_TILT, INPUT_PULLUP);
+  pinMode(PIN_BUZZER, OUTPUT);
+  digitalWrite(PIN_BUZZER, LOW);
+
+  // Initialize Sensors &amp; Peripherals
+  dht.begin();
+  Wire.begin(PIN_SDA, PIN_SCL);
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print(&quot;MINE SAFETY SYS&quot;);
+  lcd.setCursor(0, 1);
+  lcd.print(&quot;Starting AP...&quot;);
+
+  // Launch Wi-Fi Access Point (192.168.4.1)
+  WiFi.softAP(ssid, password);
+  IPAddress IP = WiFi.softAPIP();
+  Serial.print(&quot;SoftAP IP address: &quot;);
+  Serial.println(IP);
+
+  // Setup Web Server REST Endpoints
+  server.on(&quot;/&quot;, handleRoot);
+  server.on(&quot;/data&quot;, handleData);
+  server.begin();
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(&quot;AP: 192.168.4.1&quot;);
+  delay(1500);
+  lcd.clear();
+}
+
+void loop() {
+  server.handleClient();
+
+  unsigned long currentMillis = millis();
+  if (currentMillis - lastSampleTime &gt;= SAMPLE_INTERVAL) {
+    lastSampleTime = currentMillis;
+
+    // 1. Read MQ-135 Gas Sensor
+    int rawADC = analogRead(PIN_MQ135);
+    gasPPM = map(rawADC, 0, 4095, 50, 1200);
+
+    // 2. Read DHT11 Temperature &amp; Humidity
+    float t = dht.readTemperature();
+    float h = dht.readHumidity();
+    if (!isnan(t)) temperature = t;
+    if (!isnan(h)) humidity = h;
+
+    // 3. Read SW-520D Tilt Ball Sensor (LOW = Tilted/Deformed)
+    isTilt = (digitalRead(PIN_TILT) == LOW) ? 1 : 0;
+
+    // 4. Determine Critical Alarm Conditions
+    bool gasAlert = (gasPPM &gt; 700.0);
+    bool tempAlert = (temperature &gt; 38.0);
+    bool tiltAlert = (isTilt == 1);
+
+    isAlarm = (gasAlert || tempAlert || tiltAlert);
+
+    // 5. Trigger Physical Active Buzzer
+    if (isAlarm) {
+      digitalWrite(PIN_BUZZER, HIGH);
+    } else {
+      digitalWrite(PIN_BUZZER, LOW);
+    }
+
+    // 6. Update LCD 1602 Display
+    lcd.setCursor(0, 0);
+    lcd.print(&quot;G:&quot; + String((int)gasPPM) + &quot;ppm &quot;);
+    lcd.print(isAlarm ? &quot;ALERT!&quot; : &quot;NORM  &quot;);
+
+    lcd.setCursor(0, 1);
+    lcd.print(&quot;T:&quot; + String((int)temperature) + &quot;C H:&quot; + String((int)humidity) + &quot;% &quot;);
+    if (isTilt) lcd.print(&quot;TILT&quot;);
+    else lcd.print(&quot;OK  &quot;);
+  }
+}
+</pre>
+      </div>
+    </div></div>
+
+  <script>
+    // State Variables
+    let telemetry = {
+      gas: 185,
+      temp: 23.8,
+      hum: 62,
+      tilt: 0,
+      buzzer: false,
+      status: "SAFE",
+      timestamp: 0
+    };
+
+    let audioContext = null;
+    let isSoundMuted = false;
+    let activeTab = 'dashboard';
+
+    // 60-point history buffer for canvas chart
+    const historyBuffer = [];
+    const maxBufferLength = 60;
+    for (let i = 0; i < maxBufferLength; i++) {
+      historyBuffer.push({ gas: 180 + Math.sin(i * 0.2) * 10, temp: 23.5 });
+    }
+
+    // Switch Tab Function
+    function switchTab(tabId) {
+      activeTab = tabId;
+      const views = ['dashboard', '3dmodel', 'firmware'];
+      views.forEach(v => {
+        const el = document.getElementById('view-' + v);
+        const btn = document.getElementById('tab-' + v);
+        if (v === tabId) {
+          el.classList.remove('hidden');
+          btn.className = "px-3.5 py-2 text-xs md:text-sm font-semibold rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/20 border border-blue-400/30 transition";
+        } else {
+          el.classList.add('hidden');
+          btn.className = "px-3.5 py-2 text-xs md:text-sm font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition";
+        }
+      });
+      if (tabId === '3dmodel') {
+        resize3DCanvas();
+        setTimeout(resize3DCanvas, 50);
+        setTimeout(resize3DCanvas, 150);
+      }
+    }
+
+    let isLiveHardware = false;
+
+    // Real-Time Update Function (Runs every 500 ms)
+    async function tick() {
+      // Try to fetch real telemetry from physical ESP32
+      if (!isManualOverride) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 380);
+          const res = await fetch('http://192.168.4.1/data', { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            const d = await res.json();
+            telemetry.gas = d.gas_ppm !== undefined ? Number(d.gas_ppm) : (d.gas !== undefined ? Number(d.gas) : telemetry.gas);
+            telemetry.temp = d.temp_c !== undefined ? Number(d.temp_c) : (d.temp !== undefined ? Number(d.temp) : telemetry.temp);
+            telemetry.hum = d.humidity !== undefined ? Number(d.humidity) : (d.hum !== undefined ? Number(d.hum) : telemetry.hum);
+            telemetry.tilt = d.tilt !== undefined ? Number(d.tilt) : telemetry.tilt;
+            isLiveHardware = true;
+          } else {
+            isLiveHardware = false;
+          }
+        } catch(e) {
+          isLiveHardware = false;
+        }
+      }
+
+      // Small natural sensor fluctuation if not connected to live hardware and not manually dragged
+      if (!isLiveHardware && !isManualOverride) {
+        telemetry.gas += (Math.random() - 0.49) * 4;
+        if (telemetry.gas < 60) telemetry.gas = 60;
+        telemetry.temp += (Math.random() - 0.5) * 0.1;
+      }
+
+      // Update Live Hardware Connection Badge
+      const liveBadge = document.getElementById('badge-connection');
+      if (liveBadge) {
+        if (isLiveHardware) {
+          liveBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> ESP32 Wi-Fi Live (192.168.4.1)';
+          liveBadge.className = 'text-xs font-mono-tech px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5';
+        } else {
+          liveBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span> Демо-симулятор';
+          liveBadge.className = 'text-xs font-mono-tech px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-300 border border-amber-500/30 flex items-center gap-1.5';
+        }
+      }
+
+      // Check Hazard Thresholds
+      const isGasDanger = telemetry.gas > 700;
+      const isGasWarning = telemetry.gas > 300;
+      const isTempDanger = telemetry.temp > 38;
+      const isTiltDanger = telemetry.tilt === 1;
+
+      const isCritical = isGasDanger || isTempDanger || isTiltDanger;
+      telemetry.buzzer = isCritical;
+
+      // Update Status Badge
+      const statusBadge = document.getElementById('badge-status');
+      const alarmBanner = document.getElementById('alarm-banner');
+      const alarmText = document.getElementById('alarm-text');
+
+      if (isCritical) {
+        telemetry.status = "CRITICAL";
+        statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> ОПАСНОСТЬ!';
+        statusBadge.className = "text-base font-bold text-rose-500 flex items-center gap-1.5 mt-0.5";
+        alarmBanner.classList.remove('hidden');
+
+        if (isTiltDanger) {
+          alarmText.innerText = "ТРЕВОГА: ЗАФИКСИРОВАНО СМЕЩЕНИЕ ПОРОДЫ / ОБВАЛ КРЕПИ (SW-520D)!";
+        } else if (isGasDanger) {
+          alarmText.innerText = "ТРЕВОГА: ПРЕВЫШЕНИЕ ПДК МЕТАНА / CO В ЗАБОЕ (MQ-135 > 700 PPM)!";
+        } else {
+          alarmText.innerText = "ТРЕВОГА: КРИТИЧЕСКИЙ ПЕРЕГРЕВ ЗАБОЯ (DHT11 > 38°C)!";
+        }
+
+        playAlarmTone();
+      } else if (isGasWarning) {
+        telemetry.status = "WARNING";
+        statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span> Внимание';
+        statusBadge.className = "text-base font-bold text-amber-400 flex items-center gap-1.5 mt-0.5";
+        alarmBanner.classList.add('hidden');
+      } else {
+        telemetry.status = "SAFE";
+        statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Норма';
+        statusBadge.className = "text-base font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5";
+        alarmBanner.classList.add('hidden');
+      }
+
+      // Update Buzzer Badge
+      const badgeBuzzer = document.getElementById('badge-buzzer');
+      if (telemetry.buzzer) {
+        badgeBuzzer.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span> АКТИВЕН (85 dB)';
+        badgeBuzzer.className = "text-base font-bold text-rose-400 flex items-center gap-1.5 mt-0.5";
+      } else {
+        badgeBuzzer.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-500"></span> Безмолвный';
+        badgeBuzzer.className = "text-base font-bold text-slate-400 flex items-center gap-1.5 mt-0.5";
+      }
+
+      // Update UI Values
+      document.getElementById('val-gas').innerText = Math.round(telemetry.gas);
+      document.getElementById('val-temp').innerText = telemetry.temp.toFixed(1);
+      document.getElementById('val-hum').innerText = Math.round(telemetry.hum);
+
+      // Gas Gauge Ring (314 is full stroke)
+      const gasOffset = 314 - Math.min(314, (telemetry.gas / 1000) * 314);
+      const gasRing = document.getElementById('gas-ring');
+      gasRing.setAttribute('stroke-dashoffset', gasOffset);
+      if (isGasDanger) {
+        gasRing.setAttribute('stroke', '#ef4444');
+        document.getElementById('gas-status-text').className = "text-xs font-semibold text-rose-400 mt-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20";
+        document.getElementById('gas-status-text').innerText = "ОПАСНАЯ КОНЦЕНТРАЦИЯ (> 700)";
+      } else if (isGasWarning) {
+        gasRing.setAttribute('stroke', '#f59e0b');
+        document.getElementById('gas-status-text').className = "text-xs font-semibold text-amber-400 mt-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20";
+        document.getElementById('gas-status-text').innerText = "Повышенный уровень (300-700)";
+      } else {
+        gasRing.setAttribute('stroke', '#10b981');
+        document.getElementById('gas-status-text').className = "text-xs font-semibold text-emerald-400 mt-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20";
+        document.getElementById('gas-status-text').innerText = "Безопасная концентрация (< 300)";
+      }
+
+      // Temp bar
+      const tempPct = Math.min(100, Math.max(0, ((telemetry.temp - 10) / 45) * 100));
+      document.getElementById('bar-temp').style.width = tempPct + '%';
+
+      // Tilt Bubble Level
+      const tiltBubble = document.getElementById('tilt-bubble');
+      const tiltBadge = document.getElementById('tilt-status-badge');
+      if (telemetry.tilt === 1) {
+        tiltBubble.style.transform = 'translate(38px, -24px)';
+        tiltBubble.className = "w-7 h-7 rounded-full bg-rose-500 shadow-lg shadow-rose-500/80 transition-all duration-300 flex items-center justify-center animate-ping";
+        tiltBadge.innerText = "СМЕЩЕНИЕ / ОБВАЛ (45°)";
+        tiltBadge.className = "text-xs font-semibold text-rose-400 mt-3 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20";
+        document.getElementById('tilt-risk-text').innerText = "КРИТИЧЕСКИЙ (ОБРУШЕНИЕ)";
+        document.getElementById('tilt-risk-text').className = "text-rose-400 font-bold";
+      } else {
+        tiltBubble.style.transform = 'translate(0px, 0px)';
+        tiltBubble.className = "w-7 h-7 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/50 transition-all duration-300 flex items-center justify-center";
+        tiltBadge.innerText = "Кровля стабильна (Уклон 0°)";
+        tiltBadge.className = "text-xs font-semibold text-emerald-400 mt-3 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20";
+        document.getElementById('tilt-risk-text').innerText = "Отсутствует";
+        document.getElementById('tilt-risk-text').className = "text-emerald-400";
+      }
+
+      // Update On-Device LCD 1602 Simulation
+      let lcdGasStatus = isGasDanger ? "DANG" : (isGasWarning ? "WARN" : "NORM");
+      let lcdRow0 = `GAS:${Math.round(telemetry.gas)}ppm ${lcdGasStatus}`;
+      let lcdRow1 = `T:${telemetry.temp.toFixed(1)}C H:${Math.round(telemetry.hum)}% ${telemetry.tilt ? "COLLAPSE" : "OK"}`;
+      document.getElementById('lcd-row-0').innerText = lcdRow0.padEnd(16, ' ').slice(0, 16);
+      document.getElementById('lcd-row-1').innerText = lcdRow1.padEnd(16, ' ').slice(0, 16);
+
+      // Push to History Buffer and Draw Graph
+      historyBuffer.push({ gas: telemetry.gas, temp: telemetry.temp });
+      if (historyBuffer.length > maxBufferLength) historyBuffer.shift();
+      drawTelemetryGraph();
+
+      // JSON preview
+      const jsonStr = `{"gas":${Math.round(telemetry.gas)},"temp":${telemetry.temp.toFixed(1)},"hum":${Math.round(telemetry.hum)},"tilt":${telemetry.tilt},"buzzer":${telemetry.buzzer ? 1 : 0}}`;
+      document.getElementById('json-preview').innerText = "JSON: " + jsonStr;
+    }
+
+    // Canvas Telemetry Graph Renderer
+    function drawTelemetryGraph() {
+      const canvas = document.getElementById('telemetryCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width = canvas.parentElement.clientWidth;
+      const h = canvas.height = canvas.parentElement.clientHeight;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Grid Lines
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      for (let y = 0; y < h; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Draw Gas Line (Rose)
+      ctx.strokeStyle = '#f43f5e';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let i = 0; i < historyBuffer.length; i++) {
+        const x = (i / (maxBufferLength - 1)) * w;
+        const normGas = Math.min(1, historyBuffer[i].gas / 1000);
+        const y = h - (normGas * (h - 20) + 10);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Draw Temp Line (Amber)
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < historyBuffer.length; i++) {
+        const x = (i / (maxBufferLength - 1)) * w;
+        const normTemp = Math.min(1, (historyBuffer[i].temp - 10) / 45);
+        const y = h - (normTemp * (h - 20) + 10);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // Web Audio Synthesizer for Buzzer Siren
+    function playAlarmTone() {
+      if (isSoundMuted) return;
+      try {
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioContext.state === 'suspended') {
+          audioContext.resume();
+        }
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(1400, audioContext.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.25);
+        gain.gain.setValueAtTime(0.15, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.25);
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.start();
+        osc.stop(audioContext.currentTime + 0.25);
+      } catch (e) {}
+    }
+
+    function toggleSoundMute() {
+      isSoundMuted = !isSoundMuted;
+      const btn = document.getElementById('btn-sound-toggle');
+      const lbl = document.getElementById('audio-status-label');
+      if (isSoundMuted) {
+        btn.innerText = "🔇 Звук выключен";
+        btn.className = "text-xs px-3 py-1.5 rounded-lg bg-rose-900/40 text-rose-300 border border-rose-700 font-semibold transition";
+        lbl.innerText = "Звук временно заглушен";
+      } else {
+        btn.innerText = "🔊 Тест сирены";
+        btn.className = "text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold transition";
+        lbl.innerText = "Звук включен (при тревоге)";
+        playAlarmTone();
+      }
+    }
+
+    // Manual Simulation Controls
+    let isManualOverride = false;
+    let overrideTimer = null;
+
+    function manualOverride() {
+      isManualOverride = true;
+      clearTimeout(overrideTimer);
+      overrideTimer = setTimeout(() => { isManualOverride = false; }, 8000);
+
+      const gasVal = parseFloat(document.getElementById('slider-gas').value);
+      const tempVal = parseFloat(document.getElementById('slider-temp').value);
+      telemetry.gas = gasVal;
+      telemetry.temp = tempVal;
+      document.getElementById('slider-gas-val').innerText = Math.round(gasVal) + ' ppm';
+      document.getElementById('slider-temp-val').innerText = tempVal.toFixed(1) + ' °C';
+      tick();
+    }
+
+    function setTiltState(state) {
+      telemetry.tilt = state;
+      const b0 = document.getElementById('btn-tilt-0');
+      const b1 = document.getElementById('btn-tilt-1');
+      if (state === 1) {
+        b1.className = "flex-1 py-1 text-xs font-bold rounded-lg bg-rose-600 text-white border border-rose-400 transition animate-pulse";
+        b0.className = "flex-1 py-1 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition";
+        document.getElementById('slider-tilt-val').innerText = "НАКЛОН / ОБРУШЕНИЕ (45°)";
+      } else {
+        b0.className = "flex-1 py-1 text-xs font-bold rounded-lg bg-emerald-600 text-white border border-emerald-400 transition";
+        b1.className = "flex-1 py-1 text-xs font-bold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition";
+        document.getElementById('slider-tilt-val').innerText = "Норма (0°)";
+      }
+      tick();
+    }
+
+    function setScenario(type) {
+      if (type === 'safe') {
+        document.getElementById('slider-gas').value = 180;
+        document.getElementById('slider-temp').value = 24.0;
+        setTiltState(0);
+      } else if (type === 'gas') {
+        document.getElementById('slider-gas').value = 850;
+        document.getElementById('slider-temp').value = 25.5;
+        setTiltState(0);
+      } else if (type === 'tilt') {
+        document.getElementById('slider-gas').value = 210;
+        document.getElementById('slider-temp').value = 24.2;
+        setTiltState(1);
+      }
+      manualOverride();
+    }
+
+    // Start Real-Time 500ms Timer Loop
+    setInterval(tick, 500);
+
+// ==========================================
+    // NEXT-GEN 3D CAD ENGINE & COMPONENT INSPECTOR
+    // ==========================================
+    const canvas3d = document.getElementById('canvas3d');
+    const ctx3d = canvas3d.getContext('2d');
+
+    let rotX = -0.52;
+    let rotY = 0.55;
+    let zoom = 1.35;
+    let isDragging = false;
+    let lastMouseX = 0;
+    let lastMouseY = 0;
+    let isAutoRotating = false;
+    let isXRay = false;
+    let show3DLabels = true;
+    let explodeFactor = 0.0; // 0.0 to 1.0
+    let selectedComp = 'lcd';
+
+    const componentData = {
+      lcd: {
+        title: 'LCD 1602 I2C Display (PCF8574)',
+        desc: 'Двухстрочный символьный дисплей 16x2 с синей светодиодной подсветкой и I2C-контроллером PCF8574. Обеспечивает отображение концентрации метана, температуры, влажности и статуса забоя непосредственно для горнорабочих.',
+        pin: 'SDA: GPIO 21, SCL: GPIO 22',
+        pwr: '5V (VIN)',
+        proto: 'I2C (Адрес 0x27, 100 kHz)',
+        role: 'Оперативное оповещение персонала на посту',
+        tip: 'Снижает загрузку микроконтроллера, требуя всего 2 провода вместо 8 параллельных шин данных.'
+      },
+      mq135: {
+        title: 'MQ-135 Gas Sensor (Взрывобезопасный газоанализатор)',
+        desc: 'Высокочувствительный электрохимический датчик на основе оксида олова (SnO2). Предназначен для непрерывного мониторинга метана (CH4), угарного газа (CO), аммиака и токсичных рудничных испарений. Оснащен двойной взрывозащитной металлической сеткой.',
+        pin: 'AOUT: GPIO 34 (ADC1_CH6)',
+        pwr: '5V (VIN, ток нагревателя ~150 мА)',
+        proto: 'Аналоговый АЦП 12-bit (0–4095)',
+        role: 'Раннее обнаружение взрывоопасной концентрации метана',
+        tip: 'Подключен строго к каналу ADC1 (GPIO 34), так как ADC2 аппаратное блокируется при активном Wi-Fi передатчике ESP32.'
+      },
+      dht11: {
+        title: 'DHT11 Temp & Humidity Sensor (Микроклимат забоя)',
+        desc: 'Цифровой комбинированный датчик температуры и относительной влажности. Предотвращает перегрев горного оборудования и тепловые удары шахтеров.',
+        pin: 'DATA: GPIO 4 (OneWire Digital)',
+        pwr: '3.3V / 5V',
+        proto: 'Собственный 40-битный однопроводной протокол',
+        role: 'Контроль температуры забоя и вентиляции',
+        tip: 'Защищен от рудничной угольной пыли специальными козырьковыми жалюзи на корпусе.'
+      },
+      esp32: {
+        title: 'ESP32 DevKit v1 30-pin (Вычислительное ядро IoT)',
+        desc: '32-битный двухъядерный микроконтроллер Xtensa LX6 (240 МГц) со встроенным модулем Wi-Fi 802.11 b/g/n и Bluetooth BLE. Выполняет опрос сенсоров каждые 500 мс, генерирует веб-сервер и отправляет JSON-телеметрию на 192.168.4.1.',
+        pin: 'GPIO 4, 18, 21, 22, 23, 34',
+        pwr: '5V через Micro-USB или VIN',
+        proto: 'Wi-Fi SoftAP + HTTP REST Server',
+        role: 'Full-Stack сервер и шлюз передачи данных',
+        tip: 'Встроенный аппаратный генератор прерываний и независимые таймеры обеспечивают мгновенный отклик сирены при аварии.'
+      },
+      tilt: {
+        title: 'SW-520D Tilt & Vibration Sensor (Датчик обвала и смещения кровли)',
+        desc: 'Высокоточный шариковый датчик крена и сейсмических подвижек горной породы. Реагирует на смещение свыше 15 градусов или динамический удар при обрушении крепи шахты.',
+        pin: 'DOUT: GPIO 18 (INPUT_PULLUP)',
+        pwr: '3.3V / 5V',
+        proto: 'Цифровой дискретный сигнал (LOW = Тревога)',
+        role: 'Мгновенная детекция обвала породы и деформации крепи',
+        tip: 'Внутренние позолоченные шарики замыкают цепь без искрообразования, что критически важно во взрывоопасных средах.'
+      },
+      buzzer: {
+        title: 'Active Buzzer 85 dB (Акустическая сирена оповещения)',
+        desc: 'Пьезоэлектрический звуковой излучатель со встроенным звуковым генератором 2.3 кГц. Создает пронзительный звуковой сигнал громкостью 85 дБ для немедленной эвакуации людей из забоя.',
+        pin: 'VCC (+): GPIO 23, GND (-): Общий GND',
+        pwr: '5V (активация логической единицей HIGH)',
+        proto: 'Цифровой дискретный триггер',
+        role: 'Звуковая тревога при загазованности или обвале',
+        tip: 'Активируется аппаратно за 0.1 мс при превышении порога газа 700 ppm или срабатывании датчика наклона.'
+      },
+      casing: {
+        title: 'Рудничный защитный корпус IP65 / ATEX',
+        desc: 'Ударопрочный корпус из специального антистатического ABS-пластика (140х100х52 мм). Оснащен силиконовым уплотнительным контуром, ребрами жесткости, кабельным вводом PG-9 и резиновыми угловыми демпферами.',
+        pin: 'Монтаж: винты M3 из нержавеющей стали',
+        pwr: 'Искробезопасная изоляция цепей',
+        proto: 'Стандарт защиты IP65 (пыле- и влагонепроницаемый)',
+        role: 'Физическая защита электроники от пыли, воды и ударов',
+        tip: 'Предотвращает возникновение электрической искры в открытой атмосфере шахты.'
+      }
+    };
+
+    function select3DComponent(compKey) {
+      selectedComp = compKey;
+      const data = componentData[compKey] || componentData['casing'];
+
+      document.getElementById('inspector-title').innerText = data.title;
+      document.getElementById('inspector-desc').innerText = data.desc;
+      document.getElementById('inspector-pin').innerText = data.pin;
+      document.getElementById('inspector-pwr').innerText = data.pwr;
+      document.getElementById('inspector-proto').innerText = data.proto;
+      document.getElementById('inspector-role').innerText = data.role;
+      document.getElementById('inspector-tip').innerText = data.tip;
+
+      const tag = document.getElementById('inspector-chip-tag');
+      if (tag) tag.innerText = 'Узел: ' + compKey.toUpperCase();
+
+      render3D();
+    }
+
+    function toggle3DLabels() {
+      show3DLabels = !show3DLabels;
+      const btn = document.getElementById('btn-3dlabels');
+      if (btn) {
+        btn.className = show3DLabels 
+          ? "px-3 py-1.5 text-xs font-bold rounded-xl bg-blue-600 text-white border border-blue-400 transition"
+          : "px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition";
+      }
+      render3D();
+    }
+
+    function toggleAutoRotate() {
+      isAutoRotating = !isAutoRotating;
+      const btn = document.getElementById('btn-autorotate');
+      if (btn) {
+        btn.className = isAutoRotating 
+          ? "px-3 py-1.5 text-xs font-bold rounded-xl bg-amber-600 text-white border border-amber-400 transition"
+          : "px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition";
+      }
+      if (!isAutoRotating) render3D();
+    }
+
+    function toggleXRayView() {
+      isXRay = !isXRay;
+      const btn = document.getElementById('btn-xray');
+      if (btn) {
+        btn.className = isXRay 
+          ? "px-3 py-1.5 text-xs font-bold rounded-xl bg-cyan-600 text-white border border-cyan-400 transition"
+          : "px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition";
+      }
+      render3D();
+    }
+
+    function set3DCameraAngle(preset) {
+      if (preset === 'iso') {
+        rotX = -0.52;
+        rotY = 0.55;
+        zoom = 1.35;
+      } else if (preset === 'top') {
+        rotX = -1.54;
+        rotY = 0.0;
+        zoom = 1.45;
+      } else if (preset === 'front') {
+        rotX = -0.05;
+        rotY = 0.0;
+        zoom = 1.4;
+      } else if (preset === 'side') {
+        rotX = -0.15;
+        rotY = 1.57;
+        zoom = 1.35;
+      }
+      
+      ['iso', 'top', 'front', 'side'].forEach(p => {
+        const b = document.getElementById('cam-' + p);
+        if (b) {
+          if (p === preset) {
+            b.className = "px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-600 text-white border border-blue-400/30 transition";
+          } else {
+            b.className = "px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition";
+          }
+        }
+      });
+      render3D();
+    }
+
+    function onExplodeSlider(val) {
+      explodeFactor = parseFloat(val) / 100.0;
+      const lbl = document.getElementById('explode-pct-label');
+      if (lbl) lbl.innerText = Math.round(val) + '%';
+      const hud = document.getElementById('hud-mode-text');
+      if (hud) {
+        if (explodeFactor === 0) {
+          hud.innerText = "Сборка: В сборе (0%)";
+          hud.className = "text-emerald-400 font-semibold";
+        } else if (explodeFactor < 0.6) {
+          hud.innerText = "Взрыв-схема: Частичная (" + Math.round(val) + "%)";
+          hud.className = "text-amber-400 font-semibold";
+        } else {
+          hud.innerText = "Взрыв-схема: Полная (" + Math.round(val) + "%)";
+          hud.className = "text-rose-400 font-semibold";
+        }
+      }
+      render3D();
+    }
+
+    function reset3DCamera() {
+      set3DCameraAngle('iso');
+      onExplodeSlider(0);
+      const slider = document.getElementById('slider-explode');
+      if (slider) slider.value = 0;
+      if (isXRay) toggleXRayView();
+    }
+
+    function downloadSTL() {
+      let stl = "solid mine_safety_enclosure\n";
+      const addFacet = (v0, v1, v2) => {
+        stl += "  facet normal 0.0 0.0 0.0\n    outer loop\n";
+        stl += `      vertex ${v0[0]} ${v0[1]} ${v0[2]}\n`;
+        stl += `      vertex ${v1[0]} ${v1[1]} ${v1[2]}\n`;
+        stl += `      vertex ${v2[0]} ${v2[1]} ${v2[2]}\n`;
+        stl += "    endloop\n  endfacet\n";
+      };
+      const addQuad = (v0, v1, v2, v3) => {
+        addFacet(v0, v1, v2);
+        addFacet(v0, v2, v3);
+      };
+
+      const w = 140, h = 52, d = 100;
+      const x0 = -w/2, x1 = w/2, y0 = 0, y1 = h, z0 = -d/2, z1 = d/2;
+      addQuad([x0,y0,z0], [x1,y0,z0], [x1,y0,z1], [x0,y0,z1]);
+      addQuad([x0,y1,z0], [x0,y1,z1], [x1,y1,z1], [x1,y1,z0]);
+      addQuad([x0,y0,z0], [x0,y1,z0], [x1,y1,z0], [x1,y0,z0]);
+      addQuad([x0,y0,z1], [x1,y0,z1], [x1,y1,z1], [x0,y1,z1]);
+      addQuad([x0,y0,z0], [x0,y0,z1], [x0,y1,z1], [x0,y1,z0]);
+      addQuad([x1,y0,z0], [x1,y1,z0], [x1,y1,z1], [x1,y0,z1]);
+      stl += "endsolid mine_safety_enclosure\n";
+
+      const blob = new Blob([stl], { type: 'model/stl' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mine_safety_enclosure_autocad.stl';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function resize3DCanvas() {
+      if (!canvas3d) return;
+      const p = canvas3d.parentElement;
+      const pw = p ? p.clientWidth : 0;
+      const ph = p ? p.clientHeight : 0;
+      const w = pw > 50 ? pw : 800;
+      const h = ph > 50 ? ph : 480;
+      canvas3d.width = w;
+      canvas3d.height = h;
+      render3D();
+    }
+    window.addEventListener('resize', resize3DCanvas);
+
+    // Mouse & Touch Controls
+    canvas3d.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+      isAutoRotating = false;
+      const btn = document.getElementById('btn-autorotate');
+      if (btn) btn.className = "px-3 py-1.5 text-xs font-bold rounded-xl bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition";
+    });
+
+    window.addEventListener('mouseup', () => { isDragging = false; });
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - lastMouseX;
+      const dy = e.clientY - lastMouseY;
+      rotY += dx * 0.009;
+      rotX += dy * 0.009;
+      rotX = Math.max(-Math.PI * 0.95, Math.min(Math.PI * 0.95, rotX));
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+      render3D();
+    });
+
+    canvas3d.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      zoom += e.deltaY * -0.0015;
+      zoom = Math.max(0.6, Math.min(2.8, zoom));
+      render3D();
+    }, { passive: false });
+
+    // Touch Support for Mobile / Tablets
+    let touchStartX = 0, touchStartY = 0;
+    canvas3d.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isAutoRotating = false;
+      }
+    }, { passive: true });
+    canvas3d.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1) {
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+        rotY += dx * 0.012;
+        rotX += dy * 0.012;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        render3D();
+      }
+    }, { passive: true });
+
+    // Click on 3D canvas to select components
+    canvas3d.addEventListener('click', (e) => {
+      const rect = canvas3d.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      let nearestTag = null;
+      let minDist = 45; // 45px click radius
+
+      if (window._clickable3DNodes) {
+        window._clickable3DNodes.forEach(node => {
+          const dist = Math.hypot(node.x - mouseX, node.y - mouseY);
+          if (dist < minDist) {
+            minDist = dist;
+            nearestTag = node.tag;
+          }
+        });
+      }
+
+      if (nearestTag) {
+        select3DComponent(nearestTag);
+      }
+    });
+
+    // Color Shading Math (Directional Lighting + Specular + Ambient)
+    function shadeColor(hex, factor) {
+      if (!hex || hex === 'none') return hex;
+      let clean = hex.replace('#', '');
+      if (clean.length === 3) clean = clean.split('').map(c => c + c).join('');
+      let num = parseInt(clean, 16);
+      if (isNaN(num)) return hex;
+      let r = (num >> 16);
+      let g = ((num >> 8) & 0x00FF);
+      let b = (num & 0x0000FF);
+
+      r = Math.min(255, Math.max(0, Math.round(r * factor)));
+      g = Math.min(255, Math.max(0, Math.round(g * factor)));
+      b = Math.min(255, Math.max(0, Math.round(b * factor)));
+
+      return '#' + (16777216 + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+
+    // --- MAIN 3D RENDERING PIPELINE ---
+    function render3D() {
+      if (activeTab !== '3dmodel') return;
+      if (!canvas3d.width || canvas3d.width < 50) canvas3d.width = 800;
+      if (!canvas3d.height || canvas3d.height < 50) canvas3d.height = 480;
+      ctx3d.clearRect(0, 0, canvas3d.width, canvas3d.height);
+
+      const cx = canvas3d.width / 2;
+      const cy = canvas3d.height / 2;
+
+      // Reset Clickable Nodes Buffer
+      window._clickable3DNodes = [];
+
+      // 0. Floor Shadow with Realistic Radial Soft Blur
+      ctx3d.save();
+      const shadowGrad = ctx3d.createRadialGradient(cx, cy + 105 * zoom, 15 * zoom, cx, cy + 105 * zoom, 165 * zoom);
+      shadowGrad.addColorStop(0, 'rgba(0,0,0,0.72)');
+      shadowGrad.addColorStop(0.5, 'rgba(2,6,23,0.38)');
+      shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx3d.fillStyle = shadowGrad;
+      ctx3d.beginPath();
+      ctx3d.ellipse(cx, cy + 105 * zoom, 160 * zoom, 60 * zoom, 0, 0, Math.PI * 2);
+      ctx3d.fill();
+      ctx3d.restore();
+
+      // Exploded View Offsets
+      const exp = explodeFactor * 105;
+      const casingAlpha = isXRay ? 0.32 : 0.96;
+
+      // Global Render Queue for All 3D Scene Geometry
+      const renderQueue = [];
+
+      // Transformation Helper (Camera Space)
+      const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+      const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+      const fov = 460 * zoom;
+
+      function transform3D(x, y, z) {
+        // Rotate around Y
+        const x1 = x * cosY + z * sinY;
+        const z1 = -x * sinY + z * cosY;
+        // Rotate around X
+        const y2 = y * cosX - z1 * sinX;
+        const z2 = y * sinX + z1 * cosX;
+
+        const depth = z2 + 500;
+        const scale = fov / Math.max(15, depth);
+        return {
+          x_screen: cx + x1 * scale,
+          y_screen: cy + y2 * scale,
+          x_cam: x1,
+          y_cam: y2,
+          z_cam: z2,
+          scale: scale,
+          depth: depth
+        };
+      }
+
+      // Add Polygon to Scene
+      function addPolygon(pts3D, color, strokeColor, alpha, isTwoSided, tag, customDraw) {
+        const trans = pts3D.map(p => transform3D(p[0], p[1], p[2]));
+        let avgZ = 0;
+        trans.forEach(t => avgZ += t.z_cam);
+        avgZ /= trans.length;
+
+        // Normal vector in camera space
+        const p0 = trans[0], p1 = trans[1], p2 = trans[2] || trans[1];
+        const ax = p1.x_cam - p0.x_cam, ay = p1.y_cam - p0.y_cam, az = p1.z_cam - p0.z_cam;
+        const bx = p2.x_cam - p0.x_cam, by = p2.y_cam - p0.y_cam, bz = p2.z_cam - p0.z_cam;
+        let nx = ay * bz - az * by;
+        let ny = az * bx - ax * bz;
+        let nz = ax * by - ay * bx;
+        const len = Math.hypot(nx, ny, nz);
+        if (len > 0) { nx /= len; ny /= len; nz /= len; }
+
+        renderQueue.push({
+          type: 'poly',
+          pts: trans,
+          color: color,
+          strokeColor: strokeColor,
+          alpha: alpha !== undefined ? alpha : 1.0,
+          isTwoSided: !!isTwoSided,
+          tag: tag,
+          normal: { x: nx, y: ny, z: nz },
+          depth: avgZ,
+          customDraw: customDraw
+        });
+      }
+
+      // Add 3D Solid Box (6 Faces)
+      function add3DBox(x, y, z, w, h, d, color, strokeColor, alpha, tag) {
+        const x0 = x - w/2, x1 = x + w/2;
+        const y0 = y - h/2, y1 = y + h/2;
+        const z0 = z - d/2, z1 = z + d/2;
+
+        const isSel = (tag && selectedComp === tag);
+        const drawColor = isSel ? '#38bdf8' : color;
+        const drawStroke = isSel ? '#ffffff' : strokeColor;
+
+        // Top (+Y is down in screen, so top face is y0)
+        addPolygon([[x0,y0,z0], [x1,y0,z0], [x1,y0,z1], [x0,y0,z1]], drawColor, drawStroke, alpha, isXRay, tag);
+        // Bottom
+        addPolygon([[x0,y1,z1], [x1,y1,z1], [x1,y1,z0], [x0,y1,z0]], drawColor, drawStroke, alpha, isXRay, tag);
+        // Front (z1)
+        addPolygon([[x0,y0,z1], [x1,y0,z1], [x1,y1,z1], [x0,y1,z1]], drawColor, drawStroke, alpha, isXRay, tag);
+        // Back (z0)
+        addPolygon([[x1,y0,z0], [x0,y0,z0], [x0,y1,z0], [x1,y1,z0]], drawColor, drawStroke, alpha, isXRay, tag);
+        // Left (x0)
+        addPolygon([[x0,y0,z0], [x0,y0,z1], [x0,y1,z1], [x0,y1,z0]], drawColor, drawStroke, alpha, isXRay, tag);
+        // Right (x1)
+        addPolygon([[x1,y0,z1], [x1,y0,z0], [x1,y1,z0], [x1,y1,z1]], drawColor, drawStroke, alpha, isXRay, tag);
+      }
+
+      // Add 3D Cylinder / Disc
+      function add3DCylinder(x, y, z, r, h, color, strokeColor, alpha, tag, segments = 14) {
+        const isSel = (tag && selectedComp === tag);
+        const drawColor = isSel ? '#38bdf8' : color;
+        const drawStroke = isSel ? '#ffffff' : strokeColor;
+
+        const y0 = y - h/2;
+        const y1 = y + h/2;
+
+        const topRing = [];
+        const botRing = [];
+
+        for (let i = 0; i < segments; i++) {
+          const ang = (i / segments) * Math.PI * 2;
+          const px = x + Math.cos(ang) * r;
+          const pz = z + Math.sin(ang) * r;
+          topRing.push([px, y0, pz]);
+          botRing.push([px, y1, pz]);
+        }
+
+        // Top Disc
+        addPolygon(topRing, drawColor, drawStroke, alpha, isXRay, tag);
+        // Bottom Disc
+        addPolygon(botRing.slice().reverse(), drawColor, drawStroke, alpha, isXRay, tag);
+
+        // Side Walls
+        for (let i = 0; i < segments; i++) {
+          const next = (i + 1) % segments;
+          addPolygon([topRing[i], topRing[next], botRing[next], botRing[i]], drawColor, drawStroke, alpha, isXRay, tag);
+        }
+      }
+
+      // Add 3D Spline Wire
+      function add3DWire(p1, p2, color, width = 2.5, tag) {
+        const midY = (p1[1] + p2[1]) / 2 + 14;
+        const mid = [(p1[0] + p2[0]) / 2, midY, (p1[2] + p2[2]) / 2];
+
+        const t1 = transform3D(p1[0], p1[1], p1[2]);
+        const tm = transform3D(mid[0], mid[1], mid[2]);
+        const t2 = transform3D(p2[0], p2[1], p2[2]);
+        const avgDepth = (t1.z_cam + tm.z_cam + t2.z_cam) / 3;
+
+        renderQueue.push({
+          type: 'wire',
+          depth: avgDepth,
+          p1: t1,
+          pm: tm,
+          p2: t2,
+          color: color,
+          width: width,
+          tag: tag
+        });
+      }
+
+      // Add 3D Component Leader Callout Badge
+      function add3DCallout(pos, label, subtext, tag, badgeColor) {
+        const t = transform3D(pos[0], pos[1], pos[2]);
+        window._clickable3DNodes.push({ x: t.x_screen, y: t.y_screen, tag: tag });
+
+        if (!show3DLabels) return;
+
+        renderQueue.push({
+          type: 'callout',
+          depth: t.z_cam - 30, // Draw on top of its component
+          screenX: t.x_screen,
+          screenY: t.y_screen,
+          label: label,
+          subtext: subtext,
+          tag: tag,
+          color: badgeColor,
+          isSelected: (selectedComp === tag)
+        });
+      }
+
+      // ==========================================
+      // 1. CHASSIS BASE (Industrial Hollow Enclosure IP65)
+      // ==========================================
+      const baseY = 24;
+      const baseW = 144, baseH = 38, baseD = 104;
+
+      // Bottom Enclosure Base Box
+      add3DBox(0, baseY, 0, baseW, baseH, baseD, '#d97706', '#92400e', casingAlpha, 'casing');
+
+      // 4 Black Shockproof Rubber Corner Bumpers
+      const bx = 68, bz = 48;
+      add3DBox(-bx, baseY, -bz, 14, 40, 14, '#0f172a', '#334155', 1.0, 'casing');
+      add3DBox( bx, baseY, -bz, 14, 40, 14, '#0f172a', '#334155', 1.0, 'casing');
+      add3DBox(-bx, baseY,  bz, 14, 40, 14, '#0f172a', '#334155', 1.0, 'casing');
+      add3DBox( bx, baseY,  bz, 14, 40, 14, '#0f172a', '#334155', 1.0, 'casing');
+
+      // Industrial PG-9 Cable Gland on Left Wall with Black Heavy Rubber Cable
+      add3DBox(-baseW/2 - 4, baseY + 6, 12, 8, 12, 12, '#334155', '#0f172a', 1.0, 'casing');
+      add3DCylinder(-baseW/2 - 9, baseY + 6, 12, 5, 8, '#1e293b', '#0f172a', 1.0, 'casing');
+      // Power Cable extending downwards
+      add3DWire([-baseW/2 - 10, baseY + 6, 12], [-baseW/2 - 35, baseY + 45, 25], '#020617', 4.5, 'casing');
+
+      // Micro-USB Programming Port cutout on Left Wall
+      add3DBox(-baseW/2 - 2, baseY - 4, -14, 4, 7, 13, '#1e293b', '#475569', 1.0, 'esp32');
+
+      // Internal Mounting Standoffs (4 brass posts inside)
+      const sx = 52, sz = 34;
+      add3DCylinder(-sx, baseY + 8, -sz, 3, 10, '#f59e0b', '#b45309', 1.0, 'casing');
+      add3DCylinder( sx, baseY + 8, -sz, 3, 10, '#f59e0b', '#b45309', 1.0, 'casing');
+      add3DCylinder(-sx, baseY + 8,  sz, 3, 10, '#f59e0b', '#b45309', 1.0, 'casing');
+      add3DCylinder( sx, baseY + 8,  sz, 3, 10, '#f59e0b', '#b45309', 1.0, 'casing');
+
+      // ==========================================
+      // 2. INTERNAL ELECTRONICS (Carrier PCB + ESP32 + SW-520D)
+      // ==========================================
+      // Main Carrier PCB (FR-4 Dark Green Fiberglass)
+      add3DBox(0, baseY + 2, 0, 126, 3, 86, '#065f46', '#047857', 0.95, 'esp32');
+
+      // ESP32 DevKit v1 Microcontroller Board (Black PCB)
+      const isEsp = (selectedComp === 'esp32');
+      add3DBox(-18, baseY - 3, 2, 52, 5, 28, isEsp ? '#3b82f6' : '#111827', '#334155', 1.0, 'esp32');
+      // Metal RF Shield Box (ESP-WROOM-32)
+      add3DBox(-18, baseY - 7, 2, 22, 3, 20, isEsp ? '#ffffff' : '#e2e8f0', '#94a3b8', 1.0, 'esp32');
+      // Golden PCB Serpentine Wi-Fi Antenna Trace at Top
+      add3DBox(2, baseY - 6, 2, 6, 1.5, 18, '#fbbf24', '#d97706', 1.0, 'esp32');
+      // Dual Pin Headers (15 pins each side)
+      add3DBox(-18, baseY - 6, -11, 46, 3, 4, '#1e293b', '#64748b', 1.0, 'esp32');
+      add3DBox(-18, baseY - 6,  15, 46, 3, 4, '#1e293b', '#64748b', 1.0, 'esp32');
+      // Reset & Boot Buttons
+      add3DCylinder(-40, baseY - 6, -8, 1.8, 2.5, '#cbd5e1', '#475569', 1.0, 'esp32');
+      add3DCylinder(-40, baseY - 6,  8, 1.8, 2.5, '#cbd5e1', '#475569', 1.0, 'esp32');
+
+      // SW-520D Tilt & Vibration Sensor (Ceiling Collapse Detector)
+      const isTilt = (selectedComp === 'tilt');
+      // Blue breakout board
+      add3DBox(38, baseY - 3, 22, 22, 4, 16, isTilt ? '#38bdf8' : '#1d4ed8', '#1e40af', 1.0, 'tilt');
+      // Shiny Golden Metal Cylindrical Capsule (SW-520D Brass Tube)
+      add3DCylinder(38, baseY - 9, 22, 4.5, 12, isTilt ? '#ffffff' : '#fbbf24', '#d97706', 1.0, 'tilt');
+
+      // ==========================================
+      // 3. FRONT COVER / LID (Floating in Exploded View)
+      // ==========================================
+      const lidY = -4 - exp;
+      const lidW = 146, lidH = 8, lidD = 106;
+
+      // Front Lid Plate (ABS Safety Yellow / Amber)
+      add3DBox(0, lidY, 0, lidW, lidH, lidD, '#f59e0b', '#b45309', casingAlpha, 'casing');
+
+      // Black & Yellow Hazard Warning Stripes (Mine Safety Regulation)
+      add3DBox(0, lidY - 4.5, -46, 136, 1, 8, '#0f172a', '#d97706', 1.0, 'casing');
+      add3DBox(0, lidY - 4.5,  46, 136, 1, 8, '#0f172a', '#d97706', 1.0, 'casing');
+
+      // 4 Stainless Steel M3 Corner Hex Screws
+      const hx = 66, hz = 46;
+      add3DCylinder(-hx, lidY - 5, -hz, 2.5, 2.5, '#cbd5e1', '#64748b', 1.0, 'casing');
+      add3DCylinder( hx, lidY - 5, -hz, 2.5, 2.5, '#cbd5e1', '#64748b', 1.0, 'casing');
+      add3DCylinder(-hx, lidY - 5,  hz, 2.5, 2.5, '#cbd5e1', '#64748b', 1.0, 'casing');
+      add3DCylinder( hx, lidY - 5,  hz, 2.5, 2.5, '#cbd5e1', '#64748b', 1.0, 'casing');
+
+      // Status Indicator LEDs on Lid
+      add3DCylinder(-26, lidY - 5, -44, 2.5, 3.5, '#10b981', '#059669', 1.0, 'esp32'); // Green PWR
+      add3DCylinder(-14, lidY - 5, -44, 2.5, 3.5, '#ef4444', '#dc2626', 1.0, 'esp32'); // Red ALARM
+
+      // ==========================================
+      // 4. FRONT-MOUNTED SENSORS & PERIPHERALS
+      // ==========================================
+      
+      // A. LCD 1602 I2C Display Module (Mounted in central face opening)
+      const isLcd = (selectedComp === 'lcd');
+      // Green PCB Carrier
+      add3DBox(0, lidY - 4, 6, 88, 3, 38, isLcd ? '#22c55e' : '#15803d', '#166534', 1.0, 'lcd');
+      // 4 Brass mounting screws on PCB corners
+      add3DCylinder(-40, lidY - 6, -9, 1.5, 2, '#fbbf24', '#d97706', 1.0, 'lcd');
+      add3DCylinder( 40, lidY - 6, -9, 1.5, 2, '#fbbf24', '#d97706', 1.0, 'lcd');
+      add3DCylinder(-40, lidY - 6, 21, 1.5, 2, '#fbbf24', '#d97706', 1.0, 'lcd');
+      add3DCylinder( 40, lidY - 6, 21, 1.5, 2, '#fbbf24', '#d97706', 1.0, 'lcd');
+      // Metallic Black Anodized Display Frame
+      add3DBox(0, lidY - 6.5, 6, 76, 2.5, 26, '#0f172a', isLcd ? '#38bdf8' : '#334155', 1.0, 'lcd');
+      // Backlit LCD Glass Screen
+      const isAlarmState = !!(window.telemetry && (telemetry.status === "CRITICAL" || telemetry.buzzer || telemetry.alarm));
+      const lcdColor = isAlarmState ? '#ef4444' : '#0284c7';
+      const lcdStroke = isAlarmState ? '#fca5a5' : '#67e8f9';
+      add3DBox(0, lidY - 8.5, 6, 66, 1.8, 18, lcdColor, lcdStroke, 1.0, 'lcd');
+
+      // Custom 3D Text Quad on the LCD Surface (Correct Perspective Projection)
+      renderQueue.push({
+        type: 'lcd_text',
+        depth: transform3D(0, lidY - 9.5, 6).z_cam,
+        center: transform3D(0, lidY - 9.5, 6),
+        isAlarm: isAlarmState,
+        tag: 'lcd'
+      });
+
+      // B. MQ-135 Hazardous Gas Sensor (Round stainless steel mesh dome)
+      const isMq = (selectedComp === 'mq135');
+      // Blue Breakout PCB
+      add3DBox(-48, lidY - 4, -24, 28, 3, 20, isMq ? '#38bdf8' : '#1d4ed8', '#1e40af', 1.0, 'mq135');
+      // Lower Metallic Bezel Collar
+      add3DCylinder(-48, lidY - 7, -24, 11, 5, isMq ? '#ffffff' : '#cbd5e1', '#64748b', 1.0, 'mq135');
+      // Stainless Steel Double Explosion-Proof Mesh Dome
+      add3DCylinder(-48, lidY - 14, -24, 9, 10, isMq ? '#60a5fa' : '#94a3b8', isMq ? '#ffffff' : '#e2e8f0', 1.0, 'mq135');
+      // Internal Heating Coil Warm Orange Element
+      add3DCylinder(-48, lidY - 12, -24, 3.5, 6, '#ea580c', '#c2410c', 1.0, 'mq135');
+
+      // C. DHT11 Climate Sensor (Sky Blue Housing with Air Louvers)
+      const isDht = (selectedComp === 'dht11');
+      add3DBox(48, lidY - 9, -24, 16, 16, 14, isDht ? '#38bdf8' : '#0284c7', isDht ? '#ffffff' : '#0369a1', 1.0, 'dht11');
+      // Horizontal Air Intake Louver Slits
+      add3DBox(48, lidY - 12, -24, 11, 1.5, 8, '#0f172a', null, 1.0, 'dht11');
+      add3DBox(48, lidY - 9,  -24, 11, 1.5, 8, '#0f172a', null, 1.0, 'dht11');
+      add3DBox(48, lidY - 6,  -24, 11, 1.5, 8, '#0f172a', null, 1.0, 'dht11');
+
+      // D. Active Piezo Buzzer 85 dB (Black Cylinder with Sound Aperture)
+      const isBz = (selectedComp === 'buzzer');
+      add3DCylinder(48, lidY - 8, 28, 8.5, 10, isBz ? '#ef4444' : '#0f172a', isBz ? '#fca5a5' : '#334155', 1.0, 'buzzer');
+      // Center Sound Port with Inner Brass Resonator Disc
+      add3DCylinder(48, lidY - 13.5, 28, 2.8, 1.5, '#fbbf24', '#b45309', 1.0, 'buzzer');
+
+      // ==========================================
+      // 5. FLEXIBLE DUPONT WIRING HARNESS (Visible in Exploded View)
+      // ==========================================
+      if (exp > 12) {
+        // Red Power Wire (+5V Bus)
+        add3DWire([0, lidY - 1, 6], [-18, baseY - 4, -10], '#ef4444', 3.0, 'casing');
+        // Black Ground Wire (GND Bus)
+        add3DWire([0, lidY - 1, 16], [-18, baseY - 4, 14], '#020617', 3.0, 'casing');
+        // Yellow I2C SDA Wire (LCD -> GPIO 21)
+        add3DWire([-10, lidY - 2, 6], [-4, baseY - 4, 14], '#eab308', 2.5, 'lcd');
+        // Cyan I2C SCL Wire (LCD -> GPIO 22)
+        add3DWire([ 10, lidY - 2, 6], [-1, baseY - 4, 14], '#06b6d4', 2.5, 'lcd');
+        // Purple MQ-135 Gas Signal Wire (-> GPIO 34 ADC1)
+        add3DWire([-48, lidY - 3, -24], [-30, baseY - 4, -10], '#a855f7', 2.5, 'mq135');
+        // Green DHT11 Climate Signal Wire (-> GPIO 4)
+        add3DWire([ 48, lidY - 4, -24], [-12, baseY - 4, 14], '#10b981', 2.5, 'dht11');
+        // Orange SW-520D Tilt Signal Wire (-> GPIO 18)
+        add3DWire([ 38, baseY - 3, 22], [  4, baseY - 4, 14], '#f97316', 2.5, 'tilt');
+        // Red Buzzer Trigger Wire (-> GPIO 23)
+        add3DWire([ 48, lidY - 4, 28], [  8, baseY - 4, 14], '#f43f5e', 2.5, 'buzzer');
+      }
+
+      // ==========================================
+      // 6. INTERACTIVE 3D COMPONENT CALLOUT BADGES
+      // ==========================================
+      add3DCallout([0, lidY - 18, 6], '📺 LCD 1602 I2C', 'GPIO 21, 22', 'lcd', '#38bdf8');
+      add3DCallout([-48, lidY - 22, -24], '💨 MQ-135 (Газ/Метан)', 'GPIO 34 (ADC1)', 'mq135', '#a855f7');
+      add3DCallout([48, lidY - 22, -24], '🌡️ DHT11 (Климат)', 'GPIO 4', 'dht11', '#06b6d4');
+      add3DCallout([48, lidY - 20, 28], '🔊 Зуммер 85 dB', 'GPIO 23', 'buzzer', '#ef4444');
+      add3DCallout([-18, baseY - 14, 2], '⚡ ESP32 DevKit v1', '240 MHz SoftAP', 'esp32', '#10b981');
+      add3DCallout([38, baseY - 16, 22], '📐 SW-520D (Обвал)', 'GPIO 18', 'tilt', '#f59e0b');
+      add3DCallout([-baseW/2 - 14, baseY + 6, 12], '🔌 Ввод PG-9', 'IP65 гермоввод', 'casing', '#64748b');
+
+      // ==========================================
+      // 7. DEPTH SORTING & LIGHTING RENDER PASS
+      // ==========================================
+      // Directional Light Vector in Camera Space (Upper-Right Key Light)
+      const lx = 0.38, ly = -0.74, lz = -0.55;
+      const lLen = Math.hypot(lx, ly, lz);
+      const nlx = lx / lLen, nly = ly / lLen, nlz = lz / lLen;
+
+      // Sort from furthest depth to closest (Painter's Algorithm)
+      renderQueue.sort((a, b) => b.depth - a.depth);
+
+      // Render Each Item
+      renderQueue.forEach(item => {
+        if (item.type === 'poly') {
+          // Backface culling for opaque polygons
+          if (!isXRay && !item.isTwoSided && item.normal.z > 0.05) {
+            return;
+          }
+
+          // Dynamic Shading Factor
+          const dot = item.normal.x * nlx + item.normal.y * nly + item.normal.z * nlz;
+          const diffuse = Math.max(0.0, dot);
+          const specular = Math.pow(diffuse, 4) * 0.25;
+          const lightFactor = Math.min(1.4, Math.max(0.38, 0.45 + diffuse * 0.6 + specular));
+
+          const shadedColor = shadeColor(item.color, lightFactor);
+
+          ctx3d.save();
+          ctx3d.globalAlpha = item.alpha;
+
+          ctx3d.beginPath();
+          ctx3d.moveTo(item.pts[0].x_screen, item.pts[0].y_screen);
+          for (let i = 1; i < item.pts.length; i++) {
+            ctx3d.lineTo(item.pts[i].x_screen, item.pts[i].y_screen);
+          }
+          ctx3d.closePath();
+
+          ctx3d.fillStyle = shadedColor;
+          ctx3d.fill();
+
+          if (item.strokeColor) {
+            ctx3d.strokeStyle = item.strokeColor;
+            ctx3d.lineWidth = (selectedComp === item.tag) ? 2.2 : 0.75;
+            ctx3d.stroke();
+          }
+
+          ctx3d.restore();
+        } 
+        else if (item.type === 'wire') {
+          // Render 3D Curved Wire
+          ctx3d.save();
+          ctx3d.strokeStyle = item.color;
+          ctx3d.lineWidth = item.width * zoom;
+          ctx3d.lineCap = 'round';
+          ctx3d.beginPath();
+          ctx3d.moveTo(item.p1.x_screen, item.p1.y_screen);
+          ctx3d.quadraticCurveTo(item.pm.x_screen, item.pm.y_screen, item.p2.x_screen, item.p2.y_screen);
+          ctx3d.stroke();
+          ctx3d.restore();
+        }
+        else if (item.type === 'lcd_text') {
+          // Render Perspective-Correct Text on LCD Glass
+          const c = item.center;
+          ctx3d.save();
+          const fSize = Math.max(8.5, Math.round(9.5 * zoom));
+          ctx3d.font = 'bold ' + fSize + 'px "Courier New", monospace';
+          ctx3d.textAlign = 'center';
+          ctx3d.textBaseline = 'middle';
+
+          if (item.isAlarm) {
+            ctx3d.fillStyle = '#fee2e2';
+            ctx3d.shadowColor = '#ef4444';
+            ctx3d.shadowBlur = 6;
+            ctx3d.fillText('!CRITICAL HAZARD!', c.x_screen, c.y_screen - 3.5 * zoom);
+            ctx3d.fillText('EVACUATE MINE!', c.x_screen, c.y_screen + 4.5 * zoom);
+          } else {
+            ctx3d.fillStyle = '#e0f2fe';
+            ctx3d.shadowColor = '#38bdf8';
+            ctx3d.shadowBlur = 4;
+            const curGas = (window.telemetry && telemetry.gas !== undefined) ? Math.round(telemetry.gas) : 185;
+            const curTemp = (window.telemetry && telemetry.temp !== undefined) ? Number(telemetry.temp).toFixed(1) : '23.8';
+            const curHum = (window.telemetry && telemetry.hum !== undefined) ? Math.round(telemetry.hum) : 62;
+            const gasStr = 'G:' + curGas + 'ppm NORM';
+            const envStr = 'T:' + curTemp + 'C H:' + curHum + '%';
+            ctx3d.fillText(gasStr, c.x_screen, c.y_screen - 3.5 * zoom);
+            ctx3d.fillText(envStr, c.x_screen, c.y_screen + 4.5 * zoom);
+          }
+          ctx3d.restore();
+        }
+        else if (item.type === 'callout') {
+          // Render 3D Floating Engineering Badge
+          const sx = item.screenX;
+          const sy = item.screenY;
+          const isSel = item.isSelected;
+
+          ctx3d.save();
+          // Leader Pin Dot
+          ctx3d.fillStyle = item.color;
+          ctx3d.beginPath();
+          ctx3d.arc(sx, sy, isSel ? 5 : 3.5, 0, Math.PI * 2);
+          ctx3d.fill();
+
+          // Leader Line to Badge
+          const badgeX = sx + 25;
+          const badgeY = sy - 20;
+          ctx3d.strokeStyle = isSel ? '#38bdf8' : 'rgba(148, 163, 184, 0.6)';
+          ctx3d.lineWidth = isSel ? 1.8 : 1.0;
+          ctx3d.beginPath();
+          ctx3d.moveTo(sx, sy);
+          ctx3d.lineTo(badgeX - 4, badgeY);
+          ctx3d.stroke();
+
+          // Badge Background Capsule
+          ctx3d.font = 'bold 11px system-ui, sans-serif';
+          const txtWidth = ctx3d.measureText(item.label).width;
+          const padW = txtWidth + 14;
+          const padH = 20;
+
+          ctx3d.fillStyle = isSel ? 'rgba(15, 23, 42, 0.95)' : 'rgba(15, 23, 42, 0.82)';
+          ctx3d.strokeStyle = isSel ? item.color : 'rgba(51, 65, 85, 0.8)';
+          ctx3d.lineWidth = isSel ? 1.8 : 1.0;
+
+          ctx3d.beginPath();
+          if (ctx3d.roundRect) {
+            ctx3d.roundRect(badgeX - 4, badgeY - padH/2, padW, padH, 6);
+          } else {
+            ctx3d.rect(badgeX - 4, badgeY - padH/2, padW, padH);
+          }
+          ctx3d.fill();
+          ctx3d.stroke();
+
+          // Badge Text
+          ctx3d.fillStyle = isSel ? '#ffffff' : '#e2e8f0';
+          ctx3d.textBaseline = 'middle';
+          ctx3d.fillText(item.label, badgeX + 3, badgeY);
+          ctx3d.restore();
+        }
+      });
+    }
+
+    // 3D Animation Loop
+    function animate3D() {
+      if (isAutoRotating && activeTab === '3dmodel') {
+        rotY += 0.007;
+        render3D();
+      }
+      requestAnimationFrame(animate3D);
+    }
+    animate3D();
+
+    // Copy Firmware Code Helper
+    function copyFirmwareCode() {
+      const code = document.getElementById('firmware-code-block').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        const btn = document.getElementById('copy-firmware-btn-text');
+        btn.innerText = "Код скопирован в буфер!";
+        setTimeout(() => { btn.innerText = "Скопировать весь код ESP32"; }, 2500);
+      });
+    }
+
+
+    // Initial resize on load
+    setTimeout(resize3DCanvas, 200);
+  </script>
+</body>
+</html>
