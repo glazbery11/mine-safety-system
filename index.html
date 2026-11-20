@@ -281,99 +281,91 @@
 
       </div>
 
-      <!-- Live Mine Horizon & Personnel Quick Glance -->
+      <!-- Live Mine Horizon & Personnel Quick Glance: ONLY 2 ZONES + MINE SAFETY ESP32 -->
       <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
           <div class="flex items-center gap-2.5">
             <span class="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></span>
-            <h3 class="font-bold text-slate-100 text-sm md:text-base">Оперативная дислокация персонала в шахте (СППП)</h3>
+            <h3 class="font-bold text-slate-100 text-sm md:text-base">Позиционирование носимого блока Mine Safety ESP32 (СППП)</h3>
           </div>
           <button onclick="switchTab('zones')" class="text-xs px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 font-semibold transition flex items-center gap-1.5 self-start sm:self-auto">
-            <span>🗺️ Открыть интерактивную карту зон шахты</span>
+            <span>🗺️ Открыть карту перемещения между телефонами</span>
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
           </button>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <!-- Zone 1 Quick Card -->
-          <div id="dash-card-zone1" class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between space-y-2 transition-all">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+          <!-- Zone 1 Card: Phone 1 -->
+          <div id="dash-card-zone1" class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 flex flex-col justify-between space-y-2.5 transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-amber-400">Зона 1: Штрек №4 (-450м)</span>
-              <span id="dash-zone1-badge" class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">В норме</span>
+              <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                <span>📱 Телефон 1</span>
+                <span class="text-[10px] text-slate-400 font-mono-tech">(MINE_ZONE_1)</span>
+              </span>
+              <span id="dash-zone1-badge" class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Ожидание</span>
             </div>
-            <div class="text-xs text-slate-300 flex items-center gap-2">
-              <span class="text-xl">👷‍♂️</span>
+            <div class="text-xs text-slate-300 flex items-center gap-2.5">
+              <span class="text-2xl">⛏️</span>
               <div>
-                <div id="dash-zone1-miners" class="font-semibold text-slate-200">Иванов А.В., Петров С.М.</div>
-                <div class="text-[11px] text-slate-400">2 чел. в очистном забое (ESP32 пост)</div>
+                <div class="font-semibold text-slate-100">Зона 1: Штрек №1 (Забой)</div>
+                <div class="text-[11px] text-slate-400">BLE-маяк Телефона 1 (RSSI &gt; -80 dBm)</div>
               </div>
             </div>
-            <div class="text-[11px] font-mono-tech text-slate-400 flex justify-between border-t border-slate-800/80 pt-1.5">
-              <span>Газ: <span id="dash-zone1-gas" class="text-slate-200">185</span> ppm</span>
-              <span>Т: <span id="dash-zone1-temp" class="text-slate-200">23.8</span>°C</span>
+            <div class="text-[11px] font-mono-tech text-slate-400 flex justify-between border-t border-slate-800/80 pt-2">
+              <span>Статус: <span id="dash-zone1-status" class="text-slate-300">Вне зоны</span></span>
+              <span class="text-amber-400 font-semibold">Порог: 1-1.5 м</span>
             </div>
           </div>
 
-          <!-- Zone 3 Quick Card -->
-          <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between space-y-2">
+          <!-- Active Mine Safety ESP32 Tracker Card -->
+          <div id="dash-card-miner" class="bg-slate-950/90 p-4 rounded-xl border-2 border-cyan-500/50 flex flex-col justify-between space-y-2.5 shadow-lg shadow-cyan-950/20">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-300">Зона 3: Транспортный (-320м)</span>
-              <span class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">В норме</span>
+              <span class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+                <span>Mine Safety ESP32</span>
+              </span>
+              <span class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 font-bold">ID: Miner_01</span>
             </div>
-            <div class="text-xs text-slate-300 flex items-center gap-2">
-              <span class="text-xl">👷</span>
+            <div class="flex items-center gap-2.5">
+              <span class="text-2xl">👷‍♂️</span>
               <div>
-                <div class="font-semibold text-slate-200">Сидоров К.И. (#312)</div>
-                <div class="text-[11px] text-slate-400">1 чел. (Электрослесарь)</div>
+                <div class="text-xs text-slate-400 font-medium">Текущее положение ESP32:</div>
+                <div id="dash-miner-location" class="text-sm font-bold text-amber-400 flex items-center gap-1.5 mt-0.5">
+                  Зона 1: Штрек №1 (Тел. 1)
+                </div>
               </div>
             </div>
-            <div class="text-[11px] font-mono-tech text-slate-400 flex justify-between border-t border-slate-800/80 pt-1.5">
-              <span>Газ: 120 ppm</span>
-              <span>Т: 21.0°C</span>
+            <div class="text-[11px] font-mono-tech text-slate-400 flex justify-between border-t border-slate-800/80 pt-2">
+              <span>Связь: <span class="text-emerald-400">Wi-Fi SoftAP</span></span>
+              <span>Питание: <span class="text-slate-200">Батарея/USB</span></span>
             </div>
           </div>
 
-          <!-- Zone 4 Quick Card: Refuge Chamber -->
-          <div id="dash-card-zone4" class="bg-slate-950/80 p-3.5 rounded-xl border border-blue-500/30 flex flex-col justify-between space-y-2">
+          <!-- Zone 2 Card: Phone 2 -->
+          <div id="dash-card-zone2" class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 flex flex-col justify-between space-y-2.5 transition-all">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-cyan-400">Камера спасения (-450м)</span>
-              <span class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Готова</span>
+              <span class="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                <span>📱 Телефон 2</span>
+                <span class="text-[10px] text-slate-400 font-mono-tech">(MINE_ZONE_2)</span>
+              </span>
+              <span id="dash-zone2-badge" class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Ожидание</span>
             </div>
-            <div class="text-xs text-slate-300 flex items-center gap-2">
-              <span class="text-xl">🛡️</span>
+            <div class="text-xs text-slate-300 flex items-center gap-2.5">
+              <span class="text-2xl">💨</span>
               <div>
-                <div id="dash-zone4-miners" class="font-semibold text-slate-400">0 чел. укрыто</div>
-                <div class="text-[11px] text-slate-400">Запас О₂ на 48 часов</div>
+                <div class="font-semibold text-slate-100">Зона 2: Вентштрек (Ствол)</div>
+                <div class="text-[11px] text-slate-400">BLE-маяк Телефона 2 (RSSI &gt; -80 dBm)</div>
               </div>
             </div>
-            <div class="text-[11px] font-mono-tech text-slate-400 flex justify-between border-t border-slate-800/80 pt-1.5">
-              <span>СО: 0 ppm</span>
-              <span>О₂: 21.2%</span>
-            </div>
-          </div>
-
-          <!-- Zone 5 Quick Card: Shaft Station -->
-          <div class="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-300">Зона 5: Околоствольный двор</span>
-              <span class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">В норме</span>
-            </div>
-            <div class="text-xs text-slate-300 flex items-center gap-2">
-              <span class="text-xl">👷</span>
-              <div>
-                <div class="font-semibold text-slate-200">Васильев Д.Н. (#108)</div>
-                <div class="text-[11px] text-slate-400">1 чел. (ВГСЧ спасатель)</div>
-              </div>
-            </div>
-            <div class="text-[11px] font-mono-tech text-slate-400 flex justify-between border-t border-slate-800/80 pt-1.5">
-              <span>Газ: 80 ppm</span>
-              <span>Т: 18.5°C</span>
+            <div class="text-[11px] font-mono-tech text-slate-400 flex justify-between border-t border-slate-800/80 pt-2">
+              <span>Статус: <span id="dash-zone2-status" class="text-slate-300">Вне зоны</span></span>
+              <span class="text-cyan-400 font-semibold">Порог: 1-1.5 м</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Oral Exam Interactive Demo Controller (For Jury Demonstration!) -->
+      <!-- Oral Exam Interactive Demo Controller<!-- Oral Exam Interactive Demo Controller (For Jury Demonstration!) -->
       <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950/60 border border-indigo-500/30 rounded-2xl p-5 shadow-2xl space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-800 pb-3">
           <div>
@@ -385,16 +377,19 @@
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="setScenario('safe')" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 font-semibold transition">
-              Сценарий: Норма
+              Норма
+            </button>
+            <button onclick="simulateBleZone(1)" class="text-xs px-3 py-1.5 rounded-lg bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 font-semibold transition">
+              📱 В Зону 1 (Тел. 1)
+            </button>
+            <button onclick="simulateBleZone(0)" class="text-xs px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 font-semibold transition">
+              🚶 В переход (Z:0)
+            </button>
+            <button onclick="simulateBleZone(2)" class="text-xs px-3 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 border border-cyan-500/40 font-semibold transition">
+              📱 В Зону 2 (Тел. 2)
             </button>
             <button onclick="setScenario('gas')" class="text-xs px-3 py-1.5 rounded-lg bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 border border-rose-500/40 font-semibold transition">
-              Газ &gt; 1000 PPM
-            </button>
-            <button onclick="setScenario('temp')" class="text-xs px-3 py-1.5 rounded-lg bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 font-semibold transition">
-              Темп &gt; 28 °C
-            </button>
-            <button onclick="setScenario('hum')" class="text-xs px-3 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 border border-cyan-500/40 font-semibold transition">
-              Влажность &gt; 75%
+              🚨 Газ &gt; 1000 PPM
             </button>
           </div>
         </div>
@@ -443,20 +438,20 @@
           <div>
             <div class="flex items-center gap-2.5">
               <span class="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></span>
-              <h2 class="text-lg md:text-xl font-bold text-white">Интерактивная карта горизонтов шахты и мониторинг персонала (СППП)</h2>
+              <h2 class="text-lg md:text-xl font-bold text-white">Карта позиционирования: 2 Зоны (BLE телефонов) и Mine Safety ESP32</h2>
             </div>
             <p class="text-xs md:text-sm text-slate-400 mt-1">
-              Система позиционирования подземного персонала по зонам выработок и динамический расчет маршрутов эвакуации при газовой опасности
+              Телефон 1 (маяк <strong class="text-amber-400 font-mono-tech">MINE_ZONE_1</strong>) • Телефон 2 (маяк <strong class="text-cyan-400 font-mono-tech">MINE_ZONE_2</strong>) • Носимый блок ESP32 перемещается между ними
             </p>
           </div>
 
           <div class="flex flex-wrap items-center gap-2.5">
             <button onclick="toggleEvacuation()" id="btn-evacuate-main" class="text-xs px-4 py-2 rounded-xl bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 border border-rose-500/40 font-bold transition flex items-center gap-2 shadow-lg shadow-rose-900/20">
               <span class="w-2 h-2 rounded-full bg-rose-400 animate-ping"></span>
-              <span id="btn-evac-text">🚨 ЭВАКУИРОВАТЬ ШАХТЕРОВ В УКРЫТИЕ</span>
+              <span id="btn-evac-text">🚨 ЭВАКУИРОВАТЬ ESP32 В УКРЫТИЕ</span>
             </button>
             <button onclick="returnMinersToWork()" class="text-xs px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold transition">
-              Вернуть бригаду в забой
+              Вернуть в рабочую зону
             </button>
           </div>
         </div>
@@ -466,29 +461,28 @@
           <div class="flex items-center gap-3">
             <span class="text-2xl">⚠️</span>
             <div>
-              <div class="font-bold text-white text-sm md:text-base">ОБЪЯВЛЕНА ЭВАКУАЦИЯ ВЫРАБОТОК ГОРИЗОНТА -450М!</div>
-              <div class="text-xs text-rose-300 mt-0.5">В Зоне 1 (Штрек №4) превышен допустимый порог аэрогазового контроля. Горнорабочим предписано включить самоспасатели ШСС-1М.</div>
+              <div class="font-bold text-white text-sm md:text-base">ОБЪЯВЛЕНА ЭВАКУАЦИЯ ШАХТЫ!</div>
+              <div class="text-xs text-rose-300 mt-0.5">Превышен аварийный порог безопасности на блоке ESP32. Модулю предписано следовать в Камеру спасения.</div>
             </div>
           </div>
           <div class="text-xs font-mono-tech bg-slate-950/80 px-3 py-1.5 rounded-lg border border-rose-500/40 text-rose-300">
-            Маршрут: Сбойка 12 ➔ Камера спасения (140 м)
+            Маршрут: Сбойка ➔ Камера спасения
           </div>
         </div>
 
-        <!-- SVG Interactive Mine Horizons Map -->
+        <!-- SVG Interactive 2-Zone Mine Layout -->
         <div class="relative w-full bg-slate-950 rounded-2xl border border-slate-800/90 overflow-hidden shadow-inner p-3 md:p-4">
           
           <!-- Map Legend HUD -->
-          <div class="absolute top-4 left-4 z-10 pointer-events-none flex flex-wrap gap-2 text-[10px] font-mono-tech bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 backdrop-blur shadow-lg">
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Норма</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span> Опасность / Газ</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> Камера спасения</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> ESP32 узел</span>
-            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded bg-blue-500"></span> Шахтер (СППП)</span>
+          <div class="absolute top-4 left-4 z-10 pointer-events-none flex flex-wrap gap-2.5 text-[10px] font-mono-tech bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 backdrop-blur shadow-lg">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Зона 1: Телефон 1 (MINE_ZONE_1)</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span> Зона 2: Телефон 2 (MINE_ZONE_2)</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Камера спасения</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping"></span> Mine Safety ESP32</span>
           </div>
 
-          <!-- Mine Schematic Vector Map -->
-          <svg id="mineMapSvg" class="w-full h-auto min-h-[380px] max-h-[520px]" viewBox="0 0 960 480" xmlns="http://www.w3.org/2000/svg">
+          <!-- Mine Schematic Vector Map for 2 ZONES -->
+          <svg id="mineMapSvg" class="w-full h-auto min-h-[380px] max-h-[500px]" viewBox="0 0 960 480" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="rockGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stop-color="#0b1120" />
@@ -516,260 +510,189 @@
             <rect width="960" height="480" fill="url(#rockGradient)" />
             <rect width="960" height="480" fill="url(#gridPattern)" />
 
-            <!-- Coal Seam Layer at -450m horizon -->
-            <rect x="0" y="320" width="960" height="110" fill="url(#coalSeam)" opacity="0.75" />
-            <text x="20" y="340" fill="#475569" font-size="11" font-family="monospace">УГОЛЬНЫЙ ПЛАСТ К12 «МОЩНЫЙ» (ГЛУБИНА -450 М)</text>
+            <!-- Coal Seam Strata (Underground -450m horizon) -->
+            <rect x="0" y="270" width="960" height="190" fill="url(#coalSeam)" opacity="0.8" />
+            <text x="20" y="290" fill="#475569" font-size="11" font-family="monospace">УГОЛЬНЫЙ ПЛАСТ «МОЩНЫЙ» • РАБОЧИЙ ГОРИЗОНТ ДОБЫЧИ (-450 М)</text>
 
             <!-- Surface Level (0 m) -->
             <line x1="0" y1="50" x2="960" y2="50" stroke="#334155" stroke-width="2" stroke-dasharray="4 4" />
-            <text x="20" y="42" fill="#94a3b8" font-size="11" font-weight="bold" font-family="monospace">ПОВЕРХНОСТЬ ЗЕМЛИ (0.00 М) • НАДШАХТНЫЙ КОМПЛЕКС</text>
+            <text x="20" y="42" fill="#94a3b8" font-size="11" font-weight="bold" font-family="monospace">ПОВЕРХНОСТЬ ШАХТЫ (0.00 М) • НАДШАХТНЫЙ КОМПЛЕКС</text>
 
-            <!-- Vertical Shafts -->
-            <!-- Main Vertical Shaft (Ствол №1: Клетьевой подъем) -->
-            <rect x="140" y="50" width="36" height="380" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5" stroke-opacity="0.6" />
-            <!-- Vertical Guides and Lift Cage -->
-            <line x1="158" y1="50" x2="158" y2="430" stroke="#1e293b" stroke-width="2" />
-            <!-- Lift Cage at -320m -->
-            <rect x="144" y="195" width="28" height="30" rx="3" fill="#1e3a8a" stroke="#60a5fa" stroke-width="1.5" />
-            <text x="149" y="214" fill="#ffffff" font-size="9" font-family="monospace" font-weight="bold">КЛЕТЬ</text>
-            <text x="142" y="445" fill="#64748b" font-size="10" font-family="monospace">СТВОЛ №1</text>
+            <!-- Shaft 1: Left Vertical Shaft (Ствол клетьевой) -->
+            <rect x="100" y="50" width="34" height="350" fill="#0f172a" stroke="#3b82f6" stroke-width="1.5" stroke-opacity="0.6" />
+            <line x1="117" y1="50" x2="117" y2="400" stroke="#1e293b" stroke-width="2" />
+            <rect x="104" y="160" width="26" height="28" rx="3" fill="#1e3a8a" stroke="#60a5fa" stroke-width="1.5" />
+            <text x="108" y="177" fill="#ffffff" font-size="8.5" font-family="monospace" font-weight="bold">КЛЕТЬ</text>
+            <text x="85" y="420" fill="#64748b" font-size="10" font-family="monospace">СТВОЛ №1 (СВЕЖИЙ ВОЗДУХ)</text>
 
-            <!-- Ventilation Shaft (Ствол №2: Вентилятор ВЦД-47) -->
-            <rect x="820" y="50" width="30" height="380" fill="#0f172a" stroke="#06b6d4" stroke-width="1.5" stroke-opacity="0.5" />
-            <text x="805" y="42" fill="#06b6d4" font-size="10" font-family="monospace">ВЕНТСТВОЛ (ВЦД)</text>
-            <!-- Airflow arrows pointing up in vent shaft -->
-            <path d="M 835 380 L 835 100" stroke="#06b6d4" stroke-width="2" stroke-dasharray="6 6" stroke-opacity="0.7" />
-            <polygon points="835,85 830,100 840,100" fill="#06b6d4" />
+            <!-- Shaft 2: Right Vertical Shaft (Вентствол) -->
+            <rect x="830" y="50" width="34" height="350" fill="#0f172a" stroke="#06b6d4" stroke-width="1.5" stroke-opacity="0.6" />
+            <path d="M 847 380 L 847 80" stroke="#06b6d4" stroke-width="2" stroke-dasharray="6 6" stroke-opacity="0.7" />
+            <polygon points="847,68 842,82 852,82" fill="#06b6d4" />
+            <text x="795" y="42" fill="#06b6d4" font-size="10" font-family="monospace">ВЕНТСТВОЛ (ВЫТЯЖКА ВЦД)</text>
 
-            <!-- ================= HORIZON -320m ================= -->
-            <!-- Horizontal Drift -320m (Транспортный горизонт) -->
-            <rect x="176" y="190" width="644" height="40" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
-            <!-- Rail Tracks at -320m -->
-            <line x1="176" y1="218" x2="820" y2="218" stroke="#475569" stroke-width="1.5" stroke-dasharray="5 3" />
+            <!-- Main Underground Drift connecting both zones (-450m) -->
+            <!-- The horizontal gallery tunnel -->
+            <rect x="134" y="325" width="696" height="70" fill="#0a0f1d" stroke="#334155" stroke-width="2" />
+            <!-- Rails on the floor of the gallery -->
+            <line x1="134" y1="385" x2="830" y2="385" stroke="#475569" stroke-width="2" stroke-dasharray="8 4" />
 
-            <!-- Zone 5: Околоствольный двор (-320м) -->
-            <g id="svg-zone5" class="cursor-pointer" onclick="selectZone('zone5')">
-              <rect x="180" y="192" width="160" height="36" rx="4" fill="#0f172a" stroke="#10b981" stroke-width="1.5" stroke-opacity="0.8" />
-              <text x="190" y="210" fill="#10b981" font-size="10" font-weight="bold" font-family="monospace">ЗОНА 5: ДВОР СТВОЛА</text>
-              <text x="190" y="222" fill="#94a3b8" font-size="9" font-family="monospace">Горизонт -320м • Норма</text>
-            </g>
-
-            <!-- Zone 3: Главный транспортный квершлаг (-320м) -->
-            <g id="svg-zone3" class="cursor-pointer" onclick="selectZone('zone3')">
-              <rect x="370" y="192" width="230" height="36" rx="4" fill="#0f172a" stroke="#10b981" stroke-width="1.5" stroke-opacity="0.8" />
-              <text x="380" y="210" fill="#10b981" font-size="10" font-weight="bold" font-family="monospace">ЗОНА 3: ТРАНСПОРТНЫЙ ШТРЕК</text>
-              <text x="380" y="222" fill="#94a3b8" font-size="9" font-family="monospace">Электровозная откатка • 120 ppm</text>
-            </g>
-
-            <!-- Connecting Incline Shaft (Наклонный ствол между горизонтами) -->
-            <path d="M 520 230 L 320 350" stroke="#334155" stroke-width="28" stroke-linecap="round" />
-            <path d="M 520 230 L 320 350" stroke="#0f172a" stroke-width="24" stroke-linecap="round" />
-            <line x1="510" y1="236" x2="330" y2="344" stroke="#475569" stroke-width="1" stroke-dasharray="4 4" />
-            <text x="400" y="280" fill="#64748b" font-size="9" font-family="monospace" transform="rotate(31 400 280)">СБОЙКА / УКЛОН</text>
-
-            <!-- ================= HORIZON -450m (ACTIVE DRIFT & SHELTER) ================= -->
-            <!-- Main Bottom Drift at -450m -->
-            <rect x="176" y="350" width="644" height="45" fill="#0f172a" stroke="#334155" stroke-width="1.5" />
-
-            <!-- EVACUATION PATH (Dashed neon path from Zone 1 to Zone 4) -->
-            <path id="svg-evac-path" d="M 720 372 L 480 372" fill="none" stroke="#22c55e" stroke-width="5" stroke-dasharray="10 6" stroke-linecap="round" class="hidden" filter="url(#glowGreen)">
+            <!-- EVACUATION PATH: Glowing neon arrows to Refuge Chamber -->
+            <path id="svg-evac-path" d="M 270 350 L 480 350 L 480 405" fill="none" stroke="#22c55e" stroke-width="5" stroke-dasharray="10 6" stroke-linecap="round" class="hidden" filter="url(#glowGreen)">
               <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1s" repeatCount="indefinite" />
             </path>
-            <!-- Evacuation Text Label -->
-            <text id="svg-evac-label" x="515" y="364" fill="#4ade80" font-size="9" font-weight="bold" font-family="monospace" class="hidden">
-              ПУТЬ ЭВАКУАЦИИ (140 М) ➔ ➔
+            <path id="svg-evac-path2" d="M 720 350 L 480 350 L 480 405" fill="none" stroke="#22c55e" stroke-width="5" stroke-dasharray="10 6" stroke-linecap="round" class="hidden" filter="url(#glowGreen)">
+              <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1s" repeatCount="indefinite" />
+            </path>
+            <text id="svg-evac-label" x="420" y="338" fill="#4ade80" font-size="10" font-weight="bold" font-family="monospace" class="hidden">
+              ПУТЬ В КАМЕРУ СПАСЕНИЯ ➔
             </text>
 
-            <!-- ZONE 4: КАМЕРА АВАРИЙНОГО СПАСЕНИЯ (Refuge Chamber) -->
-            <g id="svg-zone4" class="cursor-pointer" onclick="selectZone('zone4')">
-              <rect x="360" y="348" width="165" height="48" rx="6" fill="#0c1929" stroke="#38bdf8" stroke-width="2" />
-              <!-- Bunker door graphic -->
-              <rect x="364" y="352" width="12" height="40" rx="2" fill="#0284c7" />
-              <text x="382" y="367" fill="#38bdf8" font-size="10" font-weight="bold" font-family="monospace">КАМЕРА СПАСЕНИЯ</text>
-              <text x="382" y="380" fill="#94a3b8" font-size="8.5" font-family="monospace">Укрытие • О₂ 48 часов</text>
-              <text x="382" y="391" fill="#34d399" font-size="8.5" font-family="monospace">Вместимость: 12 чел.</text>
-              <!-- Refuge Chamber Miners Holder -->
-              <g id="svg-miners-chamber"></g>
-            </g>
-
-            <!-- ZONE 1: ОЧИСТНОЙ ЗАБОЙ / ШТРЕК №4 (SENSOR POST ESP32) -->
+            <!-- ================= ZONE 1 (PHONE 1) ================= -->
             <g id="svg-zone1-group" class="cursor-pointer" onclick="selectZone('zone1')">
-              <!-- Zone 1 Interactive Box -->
-              <rect id="svg-zone1-box" x="570" y="348" width="245" height="48" rx="6" fill="#06251b" stroke="#10b981" stroke-width="2" />
-              
-              <text id="svg-zone1-title" x="580" y="366" fill="#34d399" font-size="10.5" font-weight="bold" font-family="monospace">ЗОНА 1: ШТРЕК №4 (ЗАБОЙ)</text>
-              <text id="svg-zone1-status-text" x="580" y="379" fill="#94a3b8" font-size="8.5" font-family="monospace">Пост датчиков ESP32 DevKit</text>
-              
-              <!-- Live Telemetry Pill in Zone 1 -->
-              <rect x="580" y="382" width="225" height="12" rx="2" fill="#021f15" fill-opacity="0.8" />
-              <text x="584" y="391" fill="#cbd5e1" font-size="8" font-family="monospace">
-                ГАЗ: <tspan id="svg-zone1-gas" fill="#f43f5e" font-weight="bold">185</tspan> PPM | 
-                Т: <tspan id="svg-zone1-temp" fill="#fbbf24" font-weight="bold">23.8</tspan>°C | 
-                ВЛ: <tspan id="svg-zone1-hum" fill="#38bdf8" font-weight="bold">62</tspan>%
-              </text>
-
-              <!-- ESP32 Hardware Badge Icon -->
-              <circle cx="802" cy="360" r="5" fill="#10b981" id="svg-esp32-beacon" />
-              <circle cx="802" cy="360" r="10" fill="none" stroke="#10b981" stroke-width="1" opacity="0.6">
-                <animate attributeName="r" values="5;14" dur="1.5s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.8;0" dur="1.5s" repeatCount="indefinite" />
+              <rect id="svg-zone1-box" x="145" y="330" width="235" height="60" rx="8" fill="#181507" stroke="#f59e0b" stroke-width="2" />
+              <!-- Phone 1 Beacon Icon -->
+              <rect x="155" y="340" width="18" height="30" rx="3" fill="#292524" stroke="#f59e0b" stroke-width="1.5" />
+              <circle cx="164" cy="365" r="2" fill="#f59e0b" />
+              <!-- Beacon waves -->
+              <circle cx="164" cy="355" r="6" fill="none" stroke="#f59e0b" stroke-width="1" opacity="0.6">
+                <animate attributeName="r" values="6;16" dur="1.8s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.8;0" dur="1.8s" repeatCount="indefinite" />
               </circle>
+
+              <text id="svg-zone1-title" x="182" y="348" fill="#fde047" font-size="11" font-weight="bold" font-family="monospace">ЗОНА 1: ШТРЕК №1 (ЗАБОЙ)</text>
+              <text x="182" y="362" fill="#94a3b8" font-size="9" font-family="monospace">📱 Телефон 1: маяк MINE_ZONE_1</text>
+              <text id="svg-zone1-status" x="182" y="376" fill="#f59e0b" font-size="9" font-family="monospace" font-weight="bold">Порог дальности: ~1-1.5 м</text>
             </g>
 
-            <!-- Dynamic Miner Tokens in Stope Drift -->
-            <g id="svg-miners-stope">
-              <!-- Miner 1: Ivanov -->
-              <g id="svg-token-402" transform="translate(685, 362)" class="cursor-pointer" onclick="selectMiner(402)">
-                <circle cx="0" cy="0" r="8" fill="#3b82f6" stroke="#93c5fd" stroke-width="1.5" />
-                <text x="0" y="3.5" fill="#ffffff" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">402</text>
-                <text x="0" y="-10" fill="#93c5fd" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">ИВАНОВ</text>
-              </g>
-
-              <!-- Miner 2: Petrov -->
-              <g id="svg-token-405" transform="translate(735, 362)" class="cursor-pointer" onclick="selectMiner(405)">
-                <circle cx="0" cy="0" r="8" fill="#3b82f6" stroke="#93c5fd" stroke-width="1.5" />
-                <text x="0" y="3.5" fill="#ffffff" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">405</text>
-                <text x="0" y="-10" fill="#93c5fd" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">ПЕТРОВ</text>
-              </g>
+            <!-- ================= TRANSIT ZONE (BETWEEN PHONES) ================= -->
+            <g id="svg-zone0-group" class="cursor-pointer" onclick="selectZone('zone0')">
+              <rect id="svg-zone0-box" x="400" y="330" width="160" height="60" rx="8" fill="#090d16" stroke="#475569" stroke-width="1.5" stroke-dasharray="4 4" />
+              <text x="415" y="352" fill="#94a3b8" font-size="10" font-weight="bold" font-family="monospace">ПЕРЕХОДНОЙ ШТРЕК</text>
+              <text x="415" y="367" fill="#64748b" font-size="8.5" font-family="monospace">Сбойка • Вне маяков (Z: 0)</text>
+              <text x="415" y="380" fill="#64748b" font-size="8.5" font-family="monospace">ESP32 в пути между тел.</text>
             </g>
 
-            <!-- Miner 3: Sidorov in Zone 3 -->
-            <g id="svg-token-312" transform="translate(480, 206)" class="cursor-pointer" onclick="selectMiner(312)">
-              <circle cx="0" cy="0" r="8" fill="#10b981" stroke="#a7f3d0" stroke-width="1.5" />
-              <text x="0" y="3.5" fill="#ffffff" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">312</text>
-              <text x="0" y="-10" fill="#a7f3d0" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">СИДОРОВ</text>
+            <!-- ================= ZONE 2 (PHONE 2) ================= -->
+            <g id="svg-zone2-group" class="cursor-pointer" onclick="selectZone('zone2')">
+              <rect id="svg-zone2-box" x="580" y="330" width="240" height="60" rx="8" fill="#041b25" stroke="#06b6d4" stroke-width="2" />
+              <!-- Phone 2 Beacon Icon -->
+              <rect x="590" y="340" width="18" height="30" rx="3" fill="#164e63" stroke="#06b6d4" stroke-width="1.5" />
+              <circle cx="599" cy="365" r="2" fill="#06b6d4" />
+              <!-- Beacon waves -->
+              <circle cx="599" cy="355" r="6" fill="none" stroke="#06b6d4" stroke-width="1" opacity="0.6">
+                <animate attributeName="r" values="6;16" dur="1.8s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.8;0" dur="1.8s" repeatCount="indefinite" />
+              </circle>
+
+              <text id="svg-zone2-title" x="618" y="348" fill="#67e8f9" font-size="11" font-weight="bold" font-family="monospace">ЗОНА 2: ВЕНТШТРЕК (СТВОЛ)</text>
+              <text x="618" y="362" fill="#94a3b8" font-size="9" font-family="monospace">📱 Телефон 2: маяк MINE_ZONE_2</text>
+              <text id="svg-zone2-status" x="618" y="376" fill="#06b6d4" font-size="9" font-family="monospace" font-weight="bold">Порог дальности: ~1-1.5 м</text>
             </g>
 
-            <!-- Miner 4: Vasilyev in Zone 5 -->
-            <g id="svg-token-108" transform="translate(250, 206)" class="cursor-pointer" onclick="selectMiner(108)">
-              <circle cx="0" cy="0" r="8" fill="#f59e0b" stroke="#fde68a" stroke-width="1.5" />
-              <text x="0" y="3.5" fill="#ffffff" font-size="8" font-weight="bold" text-anchor="middle" font-family="monospace">108</text>
-              <text x="0" y="-10" fill="#fde68a" font-size="7.5" font-weight="bold" text-anchor="middle" font-family="monospace">ВАСИЛЬЕВ (ВГСЧ)</text>
+            <!-- ================= REFUGE CHAMBER (КАМЕРА СПАСЕНИЯ) ================= -->
+            <g id="svg-chamber-group" class="cursor-pointer" onclick="selectZone('chamber')">
+              <rect id="svg-chamber-box" x="390" y="405" width="180" height="50" rx="6" fill="#0c1929" stroke="#38bdf8" stroke-width="2" />
+              <rect x="394" y="409" width="12" height="42" rx="2" fill="#0284c7" />
+              <text x="412" y="426" fill="#38bdf8" font-size="10.5" font-weight="bold" font-family="monospace">КАМЕРА СПАСЕНИЯ</text>
+              <text x="412" y="439" fill="#94a3b8" font-size="8.5" font-family="monospace">Укрытие при аварии • О₂ 48ч</text>
+              <text x="412" y="450" fill="#34d399" font-size="8.5" font-family="monospace">Безопасный рубеж</text>
+            </g>
+
+            <!-- ================= SINGLE ENTITY: MINE SAFETY ESP32 ================= -->
+            <!-- Position defaults to Zone 1 (x: 260, y: 360) -->
+            <g id="svg-token-miner" transform="translate(260, 360)" class="cursor-pointer transition-all duration-500">
+              <!-- Animated Beacon Pulse Ring -->
+              <circle cx="0" cy="0" r="14" fill="none" stroke="#38bdf8" stroke-width="2" opacity="0.8">
+                <animate attributeName="r" values="10;24" dur="1.4s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.9;0" dur="1.4s" repeatCount="indefinite" />
+              </circle>
+              <!-- Main Chip Badge -->
+              <circle cx="0" cy="0" r="11" fill="#0284c7" stroke="#ffffff" stroke-width="2" />
+              <text x="0" y="4" fill="#ffffff" font-size="8.5" font-weight="bold" text-anchor="middle" font-family="monospace">ESP</text>
+              
+              <!-- Floating Label Tag -->
+              <rect x="-65" y="-30" width="130" height="18" rx="4" fill="#0f172a" stroke="#38bdf8" stroke-width="1.5" />
+              <text x="0" y="-18" fill="#38bdf8" font-size="9" font-weight="bold" text-anchor="middle" font-family="monospace">Mine Safety ESP32</text>
             </g>
 
           </svg>
         </div>
 
-        <!-- 2-Column Section: Personnel Roster & Zone Inspector -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <!-- 2-Column Section: Single ESP32 Device Card & Phone Broadcasting Guide -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
           
-          <!-- Miners Personnel Roster (2 cols) -->
-          <div class="lg:col-span-2 bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
-              <div class="flex items-center gap-2">
-                <span class="text-base">👷‍♂️</span>
-                <h3 class="font-bold text-slate-100 text-sm">Смена в шахте: Список горнорабочих (СППП)</h3>
+          <!-- Single Card: Mine Safety ESP32 -->
+          <div class="bg-slate-950 p-5 rounded-2xl border-2 border-cyan-500/40 space-y-4 shadow-xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div class="flex items-center gap-2.5">
+                <span class="w-3 h-3 rounded-full bg-cyan-400 animate-ping"></span>
+                <h3 class="font-bold text-white text-base">Носимый комплекс: Mine Safety ESP32</h3>
               </div>
-              <span class="text-xs font-mono-tech text-slate-400">Всего: 4 чел. под землей</span>
+              <span class="text-xs font-mono-tech px-2.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 font-bold">Miner_01</span>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="miners-cards-container">
-              <!-- Miner 402 Card -->
-              <div id="mcard-402" class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2 hover:border-slate-700 transition">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-                    <span class="font-bold text-white text-xs">Иванов Алексей В.</span>
-                  </div>
-                  <span class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">Жетон #402</span>
-                </div>
-                <div class="text-[11px] text-slate-400 space-y-0.5 font-mono-tech">
-                  <div>Должность: <span class="text-slate-200">Бригадир-проходчик</span></div>
-                  <div>Дислокация: <span id="mcard-zone-402" class="text-amber-400 font-bold">Зона 1: Штрек №4 (-450м)</span></div>
-                  <div>Статус: <span id="mcard-status-402" class="text-emerald-400">В норме (Работает)</span></div>
-                </div>
-                <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-[10px] text-slate-400 font-mono-tech">
-                  <span>Пульс: 78 уд/мин</span>
-                  <span class="text-cyan-400">Каска ТРК-04 (OK)</span>
-                </div>
+            <div class="space-y-2.5 text-xs font-mono-tech bg-slate-900/80 p-4 rounded-xl border border-slate-800">
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400">Текущая зона ESP32:</span>
+                <span id="mcard-zone-text" class="text-amber-400 font-bold text-sm">Зона 1: Штрек №1 (Телефон 1)</span>
               </div>
-
-              <!-- Miner 405 Card -->
-              <div id="mcard-405" class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2 hover:border-slate-700 transition">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-                    <span class="font-bold text-white text-xs">Петров Сергей М.</span>
-                  </div>
-                  <span class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">Жетон #405</span>
-                </div>
-                <div class="text-[11px] text-slate-400 space-y-0.5 font-mono-tech">
-                  <div>Должность: <span class="text-slate-200">Машинист комбайна</span></div>
-                  <div>Дислокация: <span id="mcard-zone-405" class="text-amber-400 font-bold">Зона 1: Штрек №4 (-450м)</span></div>
-                  <div>Статус: <span id="mcard-status-405" class="text-emerald-400">В норме (Работает)</span></div>
-                </div>
-                <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-[10px] text-slate-400 font-mono-tech">
-                  <span>Пульс: 82 уд/мин</span>
-                  <span class="text-cyan-400">Каска ТРК-07 (OK)</span>
-                </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400">Активный BLE-маяк:</span>
+                <span id="mcard-beacon-text" class="text-white font-bold bg-slate-800 px-2 py-0.5 rounded">MINE_ZONE_1 (RSSI &gt; -80)</span>
               </div>
-
-              <!-- Miner 312 Card -->
-              <div id="mcard-312" class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2 hover:border-slate-700 transition">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-                    <span class="font-bold text-white text-xs">Сидоров Констанин И.</span>
-                  </div>
-                  <span class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">Жетон #312</span>
-                </div>
-                <div class="text-[11px] text-slate-400 space-y-0.5 font-mono-tech">
-                  <div>Должность: <span class="text-slate-200">Электрослесарь подземный</span></div>
-                  <div>Дислокация: <span class="text-emerald-400">Зона 3: Транспортный (-320м)</span></div>
-                  <div>Статус: <span class="text-emerald-400">В норме (Осмотр линии)</span></div>
-                </div>
-                <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-[10px] text-slate-400 font-mono-tech">
-                  <span>Пульс: 74 уд/мин</span>
-                  <span class="text-cyan-400">Каска ТРК-12 (OK)</span>
-                </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400">Статус безопасности:</span>
+                <span id="mcard-safety-text" class="text-emerald-400 font-bold">В норме (Штатно)</span>
               </div>
-
-              <!-- Miner 108 Card -->
-              <div id="mcard-108" class="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2 hover:border-slate-700 transition">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-                    <span class="font-bold text-white text-xs">Васильев Дмитрий Н.</span>
-                  </div>
-                  <span class="text-[10px] font-mono-tech px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">Жетон #108</span>
-                </div>
-                <div class="text-[11px] text-slate-400 space-y-0.5 font-mono-tech">
-                  <div>Должность: <span class="text-slate-200">Респираторщик ВГСЧ</span></div>
-                  <div>Дислокация: <span class="text-slate-300">Зона 5: Околоствольный двор</span></div>
-                  <div>Статус: <span class="text-emerald-400">Дежурство / Спасатель</span></div>
-                </div>
-                <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-[10px] text-slate-400 font-mono-tech">
-                  <span>Пульс: 68 уд/мин</span>
-                  <span class="text-emerald-400">ВГСЧ Пост 1 (Готов)</span>
-                </div>
+              <div class="flex justify-between items-center border-t border-slate-800 pt-2">
+                <span class="text-slate-400">Газ MQ-135 (Пин D34):</span>
+                <span id="mcard-gas-text" class="text-rose-400 font-bold">185 ppm</span>
               </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400">Температура / Влажность (D4):</span>
+                <span id="mcard-climate-text" class="text-amber-400 font-bold">23.8 °C / 62 %</span>
+              </div>
+            </div>
 
+            <div class="flex flex-wrap items-center gap-2 pt-1">
+              <button onclick="simulateBleZone(1)" class="text-xs px-3 py-1.5 rounded-lg bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 font-semibold transition">
+                Тест: К Телефону 1
+              </button>
+              <button onclick="simulateBleZone(0)" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold transition">
+                Тест: В переход (Z:0)
+              </button>
+              <button onclick="simulateBleZone(2)" class="text-xs px-3 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 border border-cyan-500/40 font-semibold transition">
+                Тест: К Телефону 2
+              </button>
             </div>
           </div>
 
-          <!-- Selected Zone Details Inspector (1 col) -->
-          <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4">
+          <!-- Phone Demonstration Instructions (Памятка для комиссии) -->
+          <div class="bg-slate-950 p-5 rounded-2xl border border-slate-800 space-y-3.5 flex flex-col justify-between">
             <div>
-              <div class="text-[11px] uppercase tracking-wider text-cyan-400 font-mono-tech font-bold flex items-center justify-between border-b border-slate-800 pb-2">
-                <span>Паспорт выработки</span>
-                <span id="zone-inspector-badge" class="bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20 text-[10px]">Выбрана зона</span>
+              <div class="flex items-center gap-2 text-cyan-400 font-bold text-sm border-b border-slate-800 pb-2.5">
+                <span>📱 Инструкция: Как раздать Bluetooth с телефонов</span>
               </div>
-              <h3 id="zone-inspector-title" class="text-base font-bold text-white mt-2.5">Зона 1: Штрек №4 (-450м)</h3>
-              <p id="zone-inspector-desc" class="text-xs text-slate-300 mt-1.5 leading-relaxed">
-                Действующий очистной забой пласта «Мощный». Оснащен узлом непрерывного мониторинга ESP32 с датчиками MQ-135 и DHT11.
-              </p>
+              <div class="space-y-2 mt-3 text-xs text-slate-300 leading-relaxed font-mono-tech">
+                <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800">
+                  <div class="font-bold text-amber-400">Телефон №1 (Зона 1: Штрек №1):</div>
+                  <div class="text-slate-400 mt-0.5">В настройках Bluetooth или в приложении (nRF Connect) задать имя устройства: <strong class="text-white">MINE_ZONE_1</strong></div>
+                </div>
+
+                <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800">
+                  <div class="font-bold text-cyan-400">Телефон №2 (Зона 2: Вентштрек):</div>
+                  <div class="text-slate-400 mt-0.5">В настройках Bluetooth или в приложении (nRF Connect) задать имя устройства: <strong class="text-white">MINE_ZONE_2</strong></div>
+                </div>
+
+                <div class="p-2.5 rounded-lg bg-slate-900/50 border border-slate-800/60 text-slate-400 text-[11px]">
+                  💡 <strong>Как показывать комиссии:</strong> берёте в руку плату ESP32 и подносите к Телефону 1 (дистанция 1 м) — на экране метка сразу встаёт в Зону 1. Несёте между ними — через 6 сек метка встаёт в «Переход (Z:0)». Подносите к Телефону 2 — метка встаёт в Зону 2!
+                </div>
+              </div>
             </div>
 
-            <div class="space-y-2 text-xs font-mono-tech bg-slate-900/70 p-3 rounded-xl border border-slate-800/80">
-              <div class="flex justify-between"><span class="text-slate-400">Людей в зоне:</span> <span id="zone-inspector-people" class="text-white font-bold">2 шахтера (Иванов, Петров)</span></div>
-              <div class="flex justify-between"><span class="text-slate-400">Метан / Газ (MQ-135):</span> <span id="zone-inspector-gas" class="text-rose-400 font-bold">185 ppm (Норма)</span></div>
-              <div class="flex justify-between"><span class="text-slate-400">Температура:</span> <span id="zone-inspector-temp" class="text-amber-400 font-bold">23.8 °C</span></div>
-              <div class="flex justify-between"><span class="text-slate-400">Влажность:</span> <span id="zone-inspector-hum" class="text-cyan-400 font-bold">62 %</span></div>
-              <div class="flex justify-between"><span class="text-slate-400">Камера спасения:</span> <span class="text-emerald-400 font-bold">140 метров (Сбойка 12)</span></div>
-            </div>
-
-            <div class="bg-slate-900/40 p-2.5 rounded-lg border border-slate-800/60 text-[11px] text-slate-400">
-              💡 <span>При превышении метана &gt; 1000 ppm или температуры &gt; 28 °C зона переходит в режим тревоги с автоматической подачей сигнала на каски рабочих.</span>
+            <div class="text-[11px] text-slate-500 font-mono-tech">
+              RSSI порог срабатывания в коде ESP32: &gt; -80 dBm (~1-1.5 метра).
             </div>
           </div>
 
@@ -1059,6 +982,7 @@ void handleRoot() {
     let audioContext = null;
     let isSoundMuted = false;
     let activeTab = 'dashboard';
+    let currentBleZone = 1;
 
     // 60-point history buffer for canvas chart
     const historyBuffer = [];
@@ -1083,7 +1007,7 @@ void handleRoot() {
         }
       });
       if (tabId === 'zones') {
-        selectZone(selectedZoneId);
+        syncBleZonePosition(currentBleZone);
       }
     }
 
@@ -1253,19 +1177,20 @@ void handleRoot() {
       const dashZ1Gas = document.getElementById('dash-zone1-gas');
       const dashZ1Temp = document.getElementById('dash-zone1-temp');
 
-      if (svgZ1Gas) svgZ1Gas.textContent = Math.round(telemetry.gas);
-      if (svgZ1Temp) svgZ1Temp.textContent = telemetry.temp.toFixed(1);
-      if (svgZ1Hum) svgZ1Hum.textContent = Math.round(telemetry.hum);
-      if (dashZ1Gas) dashZ1Gas.textContent = Math.round(telemetry.gas);
-      if (dashZ1Temp) dashZ1Temp.textContent = telemetry.temp.toFixed(1);
+      const mGas = document.getElementById('mcard-gas-text');
+      const mClim = document.getElementById('mcard-climate-text');
+      const mSafe = document.getElementById('mcard-safety-text');
 
-      if (selectedZoneId === 'zone1') {
-        const inspGas = document.getElementById('zone-inspector-gas');
-        const inspTemp = document.getElementById('zone-inspector-temp');
-        const inspHum = document.getElementById('zone-inspector-hum');
-        if (inspGas) inspGas.textContent = Math.round(telemetry.gas) + ' ppm' + (isGasDanger ? ' (КРИТИЧЕСКИЙ!)' : ' (Норма)');
-        if (inspTemp) inspTemp.textContent = telemetry.temp.toFixed(1) + ' °C' + (isTempDanger ? ' (ПЕРЕГРЕВ!)' : '');
-        if (inspHum) inspHum.textContent = Math.round(telemetry.hum) + ' %' + (isHumDanger ? ' (ВЫСОКАЯ!)' : '');
+      if (mGas) mGas.textContent = Math.round(telemetry.gas) + ' ppm' + (isGasDanger ? ' (ОПАСНОСТЬ!)' : '');
+      if (mClim) mClim.textContent = telemetry.temp.toFixed(1) + ' °C / ' + Math.round(telemetry.hum) + ' %';
+      if (mSafe && !isEvacuated) {
+        if (isCritical) {
+          mSafe.textContent = "🚨 ТРЕВОГА! КРИТИЧЕСКИЙ УРОВЕНЬ";
+          mSafe.className = "text-rose-400 font-bold animate-pulse";
+        } else {
+          mSafe.textContent = "В норме (Штатно)";
+          mSafe.className = "text-emerald-400 font-bold";
+        }
       }
 
       // Update Buzzer Badge
@@ -1459,86 +1384,90 @@ void handleRoot() {
     setInterval(tick, 500);
 
 // ==========================================
-    // MINE HORIZON ZONES & MINER TRACKING ENGINE (СППП)
+    // MINE HORIZON 2-ZONES & SINGLE MINE SAFETY ESP32 ENGINE
     // ==========================================
     let isEvacuated = false;
-    let selectedZoneId = 'zone1';
-    let currentBleZone = 1;
+    currentBleZone = 1; // 0 = Transit, 1 = MINE_ZONE_1, 2 = MINE_ZONE_2
 
-    // Sync Miner_01 token on the map according to ESP32 BLE scan
+    // Sync Mine Safety ESP32 position according to real BLE scan from ESP32
     function syncBleZonePosition(zoneNum) {
+      currentBleZone = Number(zoneNum);
       if (isEvacuated) return; // Keep in refuge chamber if emergency evacuation active
-      currentBleZone = zoneNum;
-      const token = document.getElementById('svg-token-402');
-      const mcardZone = document.getElementById('mcard-zone-402');
-      const mcardStat = document.getElementById('mcard-status-402');
+
+      const token = document.getElementById('svg-token-miner');
+      const dashLoc = document.getElementById('dash-miner-location');
+      const mcardZoneText = document.getElementById('mcard-zone-text');
+      const mcardBeaconText = document.getElementById('mcard-beacon-text');
+
+      const z1Box = document.getElementById('svg-zone1-box');
+      const z2Box = document.getElementById('svg-zone2-box');
+      const z0Box = document.getElementById('svg-zone0-box');
+
+      const dashZ1Badge = document.getElementById('dash-zone1-badge');
+      const dashZ2Badge = document.getElementById('dash-zone2-badge');
+      const dashZ1Status = document.getElementById('dash-zone1-status');
+      const dashZ2Status = document.getElementById('dash-zone2-status');
 
       if (zoneNum === 1) {
-        // Zone 1: Штрек №4 (Active Stope / MINE_ZONE_1)
-        if (token) token.setAttribute('transform', 'translate(685, 362)');
-        if (mcardZone) mcardZone.innerText = "Зона 1: Штрек №4 (BLE: MINE_ZONE_1)";
-        if (mcardStat) mcardStat.innerText = "В зоне забоя (Работает)";
+        // Position at Zone 1 (Phone 1)
+        if (token) token.setAttribute('transform', 'translate(260, 360)');
+        if (dashLoc) dashLoc.innerHTML = '<span class="text-amber-400">Зона 1: Штрек №1 (Тел. 1)</span>';
+        if (mcardZoneText) mcardZoneText.innerText = "Зона 1: Штрек №1 (Телефон 1)";
+        if (mcardBeaconText) mcardBeaconText.innerText = "MINE_ZONE_1 (RSSI > -80)";
+
+        if (z1Box) { z1Box.setAttribute('stroke', '#f59e0b'); z1Box.setAttribute('stroke-width', '3'); }
+        if (z2Box) { z2Box.setAttribute('stroke', '#334155'); z2Box.setAttribute('stroke-width', '1.5'); }
+        if (z0Box) { z0Box.setAttribute('stroke', '#334155'); }
+
+        if (dashZ1Badge) { dashZ1Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold"; dashZ1Badge.innerText = "ESP32 В ЗОНЕ"; }
+        if (dashZ2Badge) { dashZ2Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700"; dashZ2Badge.innerText = "Вне зоны"; }
+        if (dashZ1Status) dashZ1Status.innerText = "Активен (Рядом с Тел. 1)";
+        if (dashZ2Status) dashZ2Status.innerText = "Вне зоны";
+
       } else if (zoneNum === 2) {
-        // Zone 2: Вентиляционный штрек (MINE_ZONE_2)
-        if (token) token.setAttribute('transform', 'translate(835, 230)');
-        if (mcardZone) mcardZone.innerText = "Зона 2: Вентштрек (BLE: MINE_ZONE_2)";
-        if (mcardStat) mcardStat.innerText = "Вентствол (Осмотр струи)";
+        // Position at Zone 2 (Phone 2)
+        if (token) token.setAttribute('transform', 'translate(700, 360)');
+        if (dashLoc) dashLoc.innerHTML = '<span class="text-cyan-400">Зона 2: Вентштрек (Тел. 2)</span>';
+        if (mcardZoneText) mcardZoneText.innerText = "Зона 2: Вентштрек (Телефон 2)";
+        if (mcardBeaconText) mcardBeaconText.innerText = "MINE_ZONE_2 (RSSI > -80)";
+
+        if (z1Box) { z1Box.setAttribute('stroke', '#334155'); z1Box.setAttribute('stroke-width', '1.5'); }
+        if (z2Box) { z2Box.setAttribute('stroke', '#06b6d4'); z2Box.setAttribute('stroke-width', '3'); }
+        if (z0Box) { z0Box.setAttribute('stroke', '#334155'); }
+
+        if (dashZ1Badge) { dashZ1Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700"; dashZ1Badge.innerText = "Вне зоны"; }
+        if (dashZ2Badge) { dashZ2Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 font-bold"; dashZ2Badge.innerText = "ESP32 В ЗОНЕ"; }
+        if (dashZ1Status) dashZ1Status.innerText = "Вне зоны";
+        if (dashZ2Status) dashZ2Status.innerText = "Активен (Рядом с Тел. 2)";
+
       } else {
-        // Zone 0: Transit Drift / Connection
-        if (token) token.setAttribute('transform', 'translate(510, 290)');
-        if (mcardZone) mcardZone.innerText = "Сбойка / Вне зоны маяков (Z:0)";
-        if (mcardStat) mcardStat.innerText = "В переходе между горизонтами";
+        // Transit Zone (Between Phones / Z:0)
+        if (token) token.setAttribute('transform', 'translate(480, 360)');
+        if (dashLoc) dashLoc.innerHTML = '<span class="text-slate-300">В переходе между телефонами (Z:0)</span>';
+        if (mcardZoneText) mcardZoneText.innerText = "Сбойка: Переход между телефонами (Z:0)";
+        if (mcardBeaconText) mcardBeaconText.innerText = "Поиск маяков (Вне радиуса)";
+
+        if (z1Box) { z1Box.setAttribute('stroke', '#334155'); z1Box.setAttribute('stroke-width', '1.5'); }
+        if (z2Box) { z2Box.setAttribute('stroke', '#334155'); z2Box.setAttribute('stroke-width', '1.5'); }
+        if (z0Box) { z0Box.setAttribute('stroke', '#38bdf8'); }
+
+        if (dashZ1Badge) { dashZ1Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700"; dashZ1Badge.innerText = "Вне зоны"; }
+        if (dashZ2Badge) { dashZ2Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700"; dashZ2Badge.innerText = "Вне зоны"; }
+        if (dashZ1Status) dashZ1Status.innerText = "Вне зоны";
+        if (dashZ2Status) dashZ2Status.innerText = "Вне зоны";
       }
     }
 
-    const miners = [
-      { id: 402, name: 'Иванов А.В.', role: 'Бригадир-проходчик', zone: 'zone1', pulse: 78, status: 'Работает', helmet: 'ТРК-04' },
-      { id: 405, name: 'Петров С.М.', role: 'Машинист комбайна', zone: 'zone1', pulse: 82, status: 'Работает', helmet: 'ТРК-07' },
-      { id: 312, name: 'Сидоров К.И.', role: 'Электрослесарь', zone: 'zone3', pulse: 74, status: 'Осмотр линии', helmet: 'ТРК-12' },
-      { id: 108, name: 'Васильев Д.Н.', role: 'Респираторщик ВГСЧ', zone: 'zone5', pulse: 68, status: 'Дежурство', helmet: 'ВГСЧ Пост 1' }
-    ];
-
-    const zoneDetails = {
-      zone1: {
-        title: 'Зона 1: Штрек №4 (-450м)',
-        desc: 'Действующий очистной забой пласта «Мощный». Оснащен узлом непрерывного мониторинга ESP32 с датчиками MQ-135 и DHT11.',
-        people: '2 шахтера (Иванов, Петров)',
-        safeNote: 'До Камеры спасения: 140 метров по сбойке 12.'
-      },
-      zone3: {
-        title: 'Зона 3: Главный транспортный квершлаг (-320м)',
-        desc: 'Транспортная магистраль шахты: электровозная откатка вагонеток с углем на шахтный ствол. Вентиляция стабильная.',
-        people: '1 шахтер (Сидоров К.И.)',
-        safeNote: 'Прямой выход к стволу №1 клетьевого подъема.'
-      },
-      zone4: {
-        title: 'Зона 4: Камера аварийного спасения (-450м)',
-        desc: 'Герметичное стальное модульное укрытие со шлюзовым входом. Оснащено автономными баллонами кислорода на 48 часов, регенеративными патронами поглощения CO/CO2, питьевой водой и проводной связью.',
-        people: 'Вместимость 12 человек',
-        safeNote: 'Защищает при полном загазировании и пожаре в выработке.'
-      },
-      zone5: {
-        title: 'Зона 5: Околоствольный двор (-320м)',
-        desc: 'Капитальный околоствольный двор горизонта -320м: пост диспетчера горизонта, электроподстанция и подземный медпункт.',
-        people: '1 шахтер (Васильев Д.Н. - ВГСЧ)',
-        safeNote: 'Главная посадочная площадка клетьевого подъема на поверхность.'
-      }
-    };
-
-    function selectZone(zoneKey) {
-      selectedZoneId = zoneKey;
-      const data = zoneDetails[zoneKey];
-      if (!data) return;
-
-      document.getElementById('zone-inspector-title').innerText = data.title;
-      document.getElementById('zone-inspector-desc').innerText = data.desc;
-      document.getElementById('zone-inspector-people').innerText = data.people;
+    // Manual / Demo zone simulator button
+    function simulateBleZone(z) {
+      syncBleZonePosition(z);
     }
 
-    function selectMiner(minerId) {
-      const m = miners.find(x => x.id === minerId);
-      if (!m) return;
-      selectZone(m.zone);
+    function selectZone(zKey) {
+      if (zKey === 'zone1') simulateBleZone(1);
+      else if (zKey === 'zone2') simulateBleZone(2);
+      else if (zKey === 'zone0') simulateBleZone(0);
+      else if (zKey === 'chamber') toggleEvacuation();
     }
 
     // Emergency Evacuation Trigger
@@ -1553,85 +1482,45 @@ void handleRoot() {
     }
 
     function updateEvacuationVisuals() {
-      const token402 = document.getElementById('svg-token-402');
-      const token405 = document.getElementById('svg-token-405');
-      const evacPath = document.getElementById('svg-evac-path');
+      const token = document.getElementById('svg-token-miner');
+      const evacPath1 = document.getElementById('svg-evac-path');
+      const evacPath2 = document.getElementById('svg-evac-path2');
       const evacLabel = document.getElementById('svg-evac-label');
       const evacBanner = document.getElementById('zone-evac-banner');
       const btnEvacText = document.getElementById('btn-evac-text');
 
-      const mcardZone402 = document.getElementById('mcard-zone-402');
-      const mcardZone405 = document.getElementById('mcard-zone-405');
-      const mcardStat402 = document.getElementById('mcard-status-402');
-      const mcardStat405 = document.getElementById('mcard-status-405');
-
-      const dashZone1Miners = document.getElementById('dash-zone1-miners');
-      const dashZone4Miners = document.getElementById('dash-zone4-miners');
+      const dashLoc = document.getElementById('dash-miner-location');
+      const mcardZoneText = document.getElementById('mcard-zone-text');
+      const mcardSafetyText = document.getElementById('mcard-safety-text');
 
       if (isEvacuated) {
-        // Move miner tokens into Refuge Chamber
-        if (token402) token402.setAttribute('transform', 'translate(415, 368)');
-        if (token405) token405.setAttribute('transform', 'translate(445, 368)');
-
-        if (evacPath) evacPath.classList.remove('hidden');
+        // Move single ESP32 token into Refuge Chamber
+        if (token) token.setAttribute('transform', 'translate(480, 428)');
+        if (evacPath1) evacPath1.classList.remove('hidden');
+        if (evacPath2) evacPath2.classList.remove('hidden');
         if (evacLabel) evacLabel.classList.remove('hidden');
         if (evacBanner) evacBanner.classList.remove('hidden');
-        if (btnEvacText) btnEvacText.innerText = "ВЕРНУТЬ ШАХТЕРОВ В ЗАБОЙ";
+        if (btnEvacText) btnEvacText.innerText = "ВЕРНУТЬ ESP32 В ЗАБОЙ";
 
-        if (mcardZone402) {
-          mcardZone402.innerText = "Камера спасения (-450м)";
-          mcardZone402.className = "text-cyan-400 font-bold";
-        }
-        if (mcardZone405) {
-          mcardZone405.innerText = "Камера спасения (-450м)";
-          mcardZone405.className = "text-cyan-400 font-bold";
-        }
-        if (mcardStat402) {
-          mcardStat402.innerText = "🛡️ В укрытии (Безопасно)";
-          mcardStat402.className = "text-cyan-400 font-bold";
-        }
-        if (mcardStat405) {
-          mcardStat405.innerText = "🛡️ В укрытии (Безопасно)";
-          mcardStat405.className = "text-cyan-400 font-bold";
-        }
-
-        if (dashZone1Miners) dashZone1Miners.innerText = "0 чел. (Эвакуированы)";
-        if (dashZone4Miners) {
-          dashZone4Miners.innerText = "2 чел. укрыто (Иванов, Петров)";
-          dashZone4Miners.className = "font-semibold text-cyan-400";
+        if (dashLoc) dashLoc.innerHTML = '<span class="text-cyan-400 font-bold">🛡️ В КАМЕРЕ СПАСЕНИЯ</span>';
+        if (mcardZoneText) mcardZoneText.innerText = "Камера спасения (Безопасное укрытие)";
+        if (mcardSafetyText) {
+          mcardSafetyText.innerText = "🛡️ В укрытии (Безопасно)";
+          mcardSafetyText.className = "text-cyan-400 font-bold";
         }
       } else {
-        // Return miners to Active Stope (Zone 1)
-        if (token402) token402.setAttribute('transform', 'translate(685, 362)');
-        if (token405) token405.setAttribute('transform', 'translate(735, 362)');
-
-        if (evacPath) evacPath.classList.add('hidden');
+        // Return to current BLE zone
+        if (evacPath1) evacPath1.classList.add('hidden');
+        if (evacPath2) evacPath2.classList.add('hidden');
         if (evacLabel) evacLabel.classList.add('hidden');
         if (evacBanner) evacBanner.classList.add('hidden');
-        if (btnEvacText) btnEvacText.innerText = "🚨 ЭВАКУИРОВАТЬ ШАХТЕРОВ В УКРЫТИЕ";
+        if (btnEvacText) btnEvacText.innerText = "🚨 ЭВАКУИРОВАТЬ ESP32 В УКРЫТИЕ";
 
-        if (mcardZone402) {
-          mcardZone402.innerText = "Зона 1: Штрек №4 (-450м)";
-          mcardZone402.className = "text-amber-400 font-bold";
+        if (mcardSafetyText) {
+          mcardSafetyText.innerText = "В норме (Штатно)";
+          mcardSafetyText.className = "text-emerald-400 font-bold";
         }
-        if (mcardZone405) {
-          mcardZone405.innerText = "Зона 1: Штрек №4 (-450м)";
-          mcardZone405.className = "text-amber-400 font-bold";
-        }
-        if (mcardStat402) {
-          mcardStat402.innerText = "В норме (Работает)";
-          mcardStat402.className = "text-emerald-400";
-        }
-        if (mcardStat405) {
-          mcardStat405.innerText = "В норме (Работает)";
-          mcardStat405.className = "text-emerald-400";
-        }
-
-        if (dashZone1Miners) dashZone1Miners.innerText = "Иванов А.В., Петров С.М.";
-        if (dashZone4Miners) {
-          dashZone4Miners.innerText = "0 чел. укрыто";
-          dashZone4Miners.className = "font-semibold text-slate-400";
-        }
+        syncBleZonePosition(currentBleZone);
       }
     }
 
