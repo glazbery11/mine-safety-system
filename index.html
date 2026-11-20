@@ -58,7 +58,7 @@
             <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500"></span>
           </span>
           <span class="text-xs uppercase tracking-widest font-mono-tech px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            Wi-Fi AP: ESP32_MINE_SAFETY (192.168.4.1)
+            Wi-Fi AP: MineSafety_01 (192.168.4.1) [ID: Miner_01]
           </span>
           <span class="text-xs uppercase tracking-widest font-mono-tech px-2.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
             Rate: 500 ms JSON Stream
@@ -796,180 +796,252 @@
           </button>
         </div>
 
-        <pre class="bg-slate-950 text-slate-200 p-5 rounded-xl text-xs font-mono-tech overflow-x-auto max-h-[520px] border border-slate-800 leading-relaxed" id="firmware-code-block">/*
-  ==================================================================================
-  PROJECT: IoT-Based Coal Mine Safety Monitoring &amp; Real-Time Alerting System
-  MICROCONTROLLER: ESP32 DevKit v1 (30-pin)
-  SENSORS: MQ-135 (Gas), DHT11 (Temp/Hum), LCD 1602 I2C, Active Buzzer
-  NETWORK: Built-in SoftAP (SSID: ESP32_MINE_SAFETY, IP: 192.168.4.1)
-  TELEMETRY: JSON REST API endpoint &quot;/data&quot; updated every 500 ms
-  ==================================================================================
-*/
-
-#include &lt;WiFi.h&gt;
+        <pre class="bg-slate-950 text-slate-200 p-5 rounded-xl text-xs font-mono-tech overflow-x-auto max-h-[520px] border border-slate-800 leading-relaxed" id="firmware-code-block">#include &lt;WiFi.h&gt;
 #include &lt;WebServer.h&gt;
+#include &lt;DHT.h&gt;
 #include &lt;Wire.h&gt;
 #include &lt;LiquidCrystal_I2C.h&gt;
-#include &lt;DHT.h&gt;
+#include &lt;BLEDevice.h&gt;
+#include &lt;BLEScan.h&gt;
+#include &lt;BLEAdvertisedDevice.h&gt;
 
-// --- PIN DEFINITIONS (Optimized for ESP32 DevKit v1) ---
-#define PIN_MQ135   34  // Analog Input (ADC1_CH6) - Never conflicts with Wi-Fi!
-#define PIN_DHT     4   // OneWire Digital for DHT11
-#define PIN_BUZZER  23  // Digital Output for Active Buzzer
-#define PIN_SDA     21  // Hardware I2C SDA for LCD 1602
-#define PIN_SCL     22  // Hardware I2C SCL for LCD 1602
+// 1. НАСТРОЙКИ ТОЧКИ ДОСТУПА ESP32 И ID УСТРОЙСТВА
+const char* AP_SSID  = "MineSafety_01"; // Имя Wi-Fi сети, которую создаст ESP32
+const char* AP_PASS  = "12345678";      // Пароль (минимум 8 символов)
+const char* MINER_ID = "Miner_01";
 
-#define DHTTYPE     DHT11
-DHT dht(PIN_DHT, DHTTYPE);
+// 2. ПИНЫ ПОДКЛЮЧЕНИЯ (баззер пока отключён)
+#define MQ135_PIN   34   // D34 -&gt; AO датчика газа MQ-135
+#define DHT_PIN     4    // D4  -&gt; средний контакт DHT11
+#define LED_PIN     2    // Встроенный синий светодиод на ESP32
+
+#define DHTTYPE DHT11
+DHT dht(DHT_PIN, DHTTYPE);
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 WebServer server(80);
+BLEScan* pBLEScan;
 
-// --- WI-FI ACCESS POINT CREDENTIALS ---
-const char* ssid = &quot;ESP32_MINE_SAFETY&quot;;
-const char* password = &quot;&quot;; // Open Access Point for instantaneous commission connection
+// 3. КРИТИЧЕСКИЕ ПОРОГИ ШАХТЫ И НАСТРОЙКИ ЗОН
+const float TEMP_MAX          = 26.0;  // Предельная температура (°C)
+const float HEAT_STRESS_TEMP  = 24.0;  // Порог T для теплового стресса (°C)
+const float HEAT_STRESS_HUM   = 75.0;  // Порог H при повышенной температуре (%)
+const float HUM_MAX           = 85.0;  // Критическая сырость (%)
+const float HUM_MIN           = 15.0;  // Порог сухости (адаптирован под DHT11)
 
-// --- GLOBAL TELEMETRY VARIABLES ---
-float gasPPM = 0.0;
-float temperature = 0.0;
-float humidity = 0.0;
-bool isAlarm = false;
-unsigned long lastSampleTime = 0;
-const unsigned long SAMPLE_INTERVAL = 500; // 500 ms high-speed streaming
+const unsigned long WARMUP_MS       = 40000; // 40 сек прогрев MQ-135
+const int GAS_DELTA                 = 600;   // Скачок выше базы для тревоги
+const int RSSI_THRESHOLD            = -80;   // Порог сигнала маяка (~1-1.5 м)
+const unsigned long ZONE_TIMEOUT_MS = 6000;  // Сброс в Z:0 через 6 сек после ухода от маяка
 
-// Embedded Web Dashboard HTML stored in Flash memory
-const char INDEX_HTML[] PROGMEM = R&quot;rawliteral(
-&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-  &lt;meta charset=&quot;UTF-8&quot;&gt;
-  &lt;title&gt;ESP32 Mine Safety&lt;/title&gt;
-  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1&quot;&gt;
-  &lt;style&gt;
-    body{font-family:Arial,sans-serif;background:#090d16;color:#fff;text-align:center;padding:20px}
-    .card{background:#131c2e;border:1px solid #233554;border-radius:12px;padding:15px;margin:10px auto;max-width:400px}
-    h2{color:#38bdf8}
-    .val{font-size:32px;font-weight:bold;margin:5px 0}
-    .danger{color:#ef4444}
-    .safe{color:#10b981}
-  &lt;/style&gt;
-&lt;/head&gt;
-&lt;body&gt;
-  &lt;h2&gt;ESP32 Mine Safety Dashboard&lt;/h2&gt;
-  &lt;div class=&quot;card&quot;&gt;&lt;div&gt;Gas Level (MQ-135)&lt;/div&gt;&lt;div id=&quot;gas&quot; class=&quot;val&quot;&gt;--&lt;/div&gt;&lt;div&gt;PPM&lt;/div&gt;&lt;/div&gt;
-  &lt;div class=&quot;card&quot;&gt;&lt;div&gt;Temperature / Humidity&lt;/div&gt;&lt;div id=&quot;th&quot; class=&quot;val&quot;&gt;--&lt;/div&gt;&lt;/div&gt;
-  &lt;div class=&quot;card&quot;&gt;&lt;div&gt;Status&lt;/div&gt;&lt;div id=&quot;st&quot; class=&quot;val safe&quot;&gt;NORMAL&lt;/div&gt;&lt;/div&gt;
-  \&lt;script&gt;
-    setInterval(async () =&gt; {
-      try {
-        const res = await fetch(&#x27;/data&#x27;);
-        const d = await res.json();
-        document.getElementById(&#x27;gas&#x27;).innerText = d.gas_ppm;
-        document.getElementById(&#x27;th&#x27;).innerText = d.temp_c + &#x27; C / &#x27; + d.humidity + &#x27; %&#x27;;
-        
-        document.getElementById(&#x27;st&#x27;).innerText = d.status;
-        document.getElementById(&#x27;st&#x27;).className = &#x27;val &#x27; + (d.alarm ? &#x27;danger&#x27; : &#x27;safe&#x27;);
-      } catch(e) {}
-    }, 500);
-  &lt;\/script&gt;
-&lt;/body&gt;
-&lt;/html&gt;
-)rawliteral&quot;;
+int gasThreshold   = 2200;
+bool gasCalibrated = false;
 
-void handleRoot() {
-  server.send_P(200, &quot;text/html&quot;, INDEX_HTML);
-}
+int currentGas     = 0;
+float currentTemp  = 23.0;
+float currentHum   = 45.0;
+int currentZone    = 0;
+bool dhtError      = false;
+bool currentDanger = false;
 
-void handleData() {
-  // Construct real-time JSON packet
-  String json = &quot;{&quot;;
-  json += &quot;\\&quot;gas_ppm\\&quot;:&quot; + String(gasPPM, 0) + &quot;,&quot;;
-  json += &quot;\\&quot;temp_c\\&quot;:&quot; + String(temperature, 1) + &quot;,&quot;;
-  json += &quot;\\&quot;humidity\\&quot;:&quot; + String(humidity, 0) + &quot;,&quot;;
-  
-  json += &quot;\\&quot;buzzer\\&quot;:&quot; + String(isAlarm ? 1 : 0) + &quot;,&quot;;
-  json += &quot;\\&quot;alarm\\&quot;:&quot; + String(isAlarm ? 1 : 0) + &quot;,&quot;;
-  json += &quot;\\&quot;status\\&quot;:\\&quot;&quot; + String(isAlarm ? &quot;CRITICAL HAZARD!&quot; : &quot;NORMAL&quot;) + &quot;\\&quot;&quot;;
-  json += &quot;}&quot;;
-
-  server.sendHeader(&quot;Access-Control-Allow-Origin&quot;, &quot;*&quot;);
-  server.send(200, &quot;application/json&quot;, json);
-}
+unsigned long lastDhtTime      = 0;
+unsigned long lastBleTime      = 0;
+unsigned long lastLcdTime      = 0;
+unsigned long lastZoneSeenTime = 0;
 
 void setup() {
   Serial.begin(115200);
 
-  // Initialize GPIOs
-  pinMode(PIN_BUZZER, OUTPUT);
-  digitalWrite(PIN_BUZZER, LOW);
+  pinMode(MQ135_PIN, INPUT);
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
 
-  // Initialize Sensors &amp; Peripherals
   dht.begin();
-  Wire.begin(PIN_SDA, PIN_SCL);
+  Wire.begin(21, 22);
   lcd.init();
   lcd.backlight();
-  lcd.setCursor(0, 0);
-  lcd.print(&quot;MINE SAFETY SYS&quot;);
-  lcd.setCursor(0, 1);
-  lcd.print(&quot;Starting AP...&quot;);
 
-  // Launch Wi-Fi Access Point (192.168.4.1)
-  WiFi.softAP(ssid, password);
-  IPAddress IP = WiFi.softAPIP();
-  Serial.print(&quot;SoftAP IP address: &quot;);
-  Serial.println(IP);
+  // Запуск собственной точки доступа Wi-Fi
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(AP_SSID, AP_PASS);
+  WiFi.setTxPower(WIFI_POWER_19_5dBm);
 
-  // Setup Web Server REST Endpoints
-  server.on(&quot;/&quot;, handleRoot);
-  server.on(&quot;/data&quot;, handleData);
-  server.begin();
+  String ipStr = WiFi.softAPIP().toString(); // Всегда 192.168.4.1
 
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print(&quot;AP: 192.168.4.1&quot;);
-  delay(1500);
+  lcd.print("AP:");
+  lcd.print(AP_SSID);
+  lcd.setCursor(0, 1);
+  lcd.print("IP:");
+  lcd.print(ipStr);
+
+  Serial.println("
+=== Miner_01 SoftAP + BLE Online ===");
+  Serial.println("JSON URL: http://" + ipStr + "/data");
+
+  // Инициализация BLE-сканера для поиска маяков зон
+  BLEDevice::init(MINER_ID);
+  pBLEScan = BLEDevice::getScan();
+  pBLEScan-&gt;setActiveScan(true);
+  pBLEScan-&gt;setInterval(100);
+  pBLEScan-&gt;setWindow(99);
+
+  // Запуск локального HTTP-сервера
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/data", HTTP_GET, handleData);
+  server.on("/data", HTTP_OPTIONS, handleCorsPreflight);
+  server.begin();
+
+  delay(4000);
   lcd.clear();
 }
 
 void loop() {
   server.handleClient();
+  unsigned long now = millis();
 
-  unsigned long currentMillis = millis();
-  if (currentMillis - lastSampleTime &gt;= SAMPLE_INTERVAL) {
-    lastSampleTime = currentMillis;
+  // 1. Газ и автокалибровка после 40 сек прогрева
+  currentGas = analogRead(MQ135_PIN);
+  bool isWarmingUp = (now &lt; WARMUP_MS);
 
-    // 1. Read MQ-135 Gas Sensor
-    int rawADC = analogRead(PIN_MQ135);
-    gasPPM = map(rawADC, 0, 4095, 50, 1200);
+  if (!isWarmingUp &amp;&amp; !gasCalibrated) {
+    gasThreshold = currentGas + GAS_DELTA;
+    if (gasThreshold &gt; 3700) gasThreshold = 3700;
+    gasCalibrated = true;
+    Serial.println("MQ-135 calibrated. Base: " + String(currentGas) + " | Limit: " + String(gasThreshold));
+  }
 
-    // 2. Read DHT11 Temperature &amp; Humidity
+  // 2. Температура и влажность раз в 1.5 сек
+  if (now - lastDhtTime &gt;= 1500) {
+    lastDhtTime = now;
     float t = dht.readTemperature();
     float h = dht.readHumidity();
-    if (!isnan(t)) temperature = t;
-    if (!isnan(h)) humidity = h;
-
-    // 4. Determine Critical Alarm Conditions
-    bool gasAlert = (gasPPM &gt; 1000.0);
-    bool tempAlert = (temperature &gt; 28.0);
-    isAlarm = (gasAlert || tempAlert);
-
-    // 5. Trigger Physical Active Buzzer
-    if (isAlarm) {
-      digitalWrite(PIN_BUZZER, HIGH);
+    if (isnan(t) || isnan(h)) {
+      dhtError = true;
     } else {
-      digitalWrite(PIN_BUZZER, LOW);
+      dhtError    = false;
+      currentTemp = t;
+      currentHum  = h;
     }
+  }
 
-    // 6. Update LCD 1602 Display
+  // 3. Поиск BLE-маяков зон раз в 3 сек
+  if (now - lastBleTime &gt;= 3000) {
+    lastBleTime = now;
+    scanBeacons();
+  }
+
+  // 4. Проверка угроз и световая индикация на плате
+  bool dangerGas       = (!isWarmingUp) &amp;&amp; (currentGas &gt;= gasThreshold);
+  bool dangerTemp      = !dhtError &amp;&amp; (currentTemp &gt;= TEMP_MAX);
+  bool dangerHeatCombo = !dhtError &amp;&amp; (currentTemp &gt;= HEAT_STRESS_TEMP) &amp;&amp; (currentHum &gt;= HEAT_STRESS_HUM);
+  bool dangerHumHigh   = !dhtError &amp;&amp; (currentHum &gt;= HUM_MAX);
+  bool dangerHumLow    = !dhtError &amp;&amp; (currentHum &lt;= HUM_MIN);
+
+  currentDanger = dangerGas || dangerTemp || dangerHeatCombo || dangerHumHigh || dangerHumLow;
+
+  if (currentDanger) {
+    bool pulse = ((now / 250) % 2 == 0);
+    digitalWrite(LED_PIN, pulse ? HIGH : LOW);
+  } else {
+    digitalWrite(LED_PIN, LOW);
+  }
+
+  // 5. Обновление LCD каждые 250 мс (карусель тревог раз в секунду)
+  if (now - lastLcdTime &gt;= 250) {
+    lastLcdTime = now;
+
+    // Верхняя строка: газ, температура и текущая зона (ровно 16 символов)
+    char line1[17];
+    snprintf(line1, sizeof(line1), "G:%-4d T:%2dC Z:%d", currentGas, (int)currentTemp, currentZone);
     lcd.setCursor(0, 0);
-    lcd.print(&quot;G:&quot; + String((int)gasPPM) + &quot;ppm &quot;);
-    lcd.print(isAlarm ? &quot;ALERT!&quot; : &quot;NORM  &quot;);
+    lcd.print(line1);
+
+    const char* activeAlerts[6];
+    int alertCount = 0;
+
+    if (dangerGas)       activeAlerts[alertCount++] = "ALERT: HIGH GAS!";
+    if (dangerTemp)      activeAlerts[alertCount++] = "ALERT: TEMP&gt;=26C";
+    if (dangerHeatCombo) activeAlerts[alertCount++] = "ALERT: HEAT+HUM!";
+    if (dangerHumHigh)   activeAlerts[alertCount++] = "ALERT: HIGH HUM!";
+    if (dangerHumLow)    activeAlerts[alertCount++] = "ALERT: DRY AIR! ";
+    if (dhtError)        activeAlerts[alertCount++] = "WARN: DHT ERROR ";
 
     lcd.setCursor(0, 1);
-    lcd.print(&quot;T:&quot; + String((int)temperature) + &quot;C H:&quot; + String((int)humidity) + &quot;% &quot;);
-    lcd.print(isAlarm ? &quot;ALARM&quot; : &quot;OK   &quot;);
+    if (alertCount &gt; 0) {
+      int alertIndex = (now / 1000) % alertCount;
+      lcd.print(activeAlerts[alertIndex]);
+    } else if (isWarmingUp) {
+      int secLeft = (WARMUP_MS - now) / 1000 + 1;
+      char line2[17];
+      snprintf(line2, sizeof(line2), "WARMUP:%2ds H:%2d%%", secLeft, (int)currentHum);
+      lcd.print(line2);
+    } else {
+      char line2[17];
+      snprintf(line2, sizeof(line2), "STATUS:OK  H:%2d%%", (int)currentHum);
+      lcd.print(line2);
+    }
   }
 }
-</pre>
+
+void scanBeacons() {
+  BLEScanResults* foundDevices = pBLEScan-&gt;start(1, false);
+  int bestRssi = -100;
+  int detectedZone = 0;
+
+  for (int i = 0; i &lt; foundDevices-&gt;getCount(); i++) {
+    BLEAdvertisedDevice device = foundDevices-&gt;getDevice(i);
+    String devName = String(device.getName().c_str());
+    int rssi = device.getRSSI();
+
+    if (rssi &gt; RSSI_THRESHOLD &amp;&amp; rssi &gt; bestRssi) {
+      if (devName == "MINE_ZONE_1") {
+        detectedZone = 1;
+        bestRssi = rssi;
+      } else if (devName == "MINE_ZONE_2") {
+        detectedZone = 2;
+        bestRssi = rssi;
+      }
+    }
+  }
+  pBLEScan-&gt;clearResults();
+
+  if (detectedZone &gt; 0) {
+    currentZone = detectedZone;
+    lastZoneSeenTime = millis();
+  } else if (currentZone != 0 &amp;&amp; (millis() - lastZoneSeenTime &gt; ZONE_TIMEOUT_MS)) {
+    currentZone = 0;
+  }
+}
+
+void sendCorsHeaders() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+void handleCorsPreflight() {
+  sendCorsHeaders();
+  server.send(204);
+}
+
+void handleData() {
+  sendCorsHeaders();
+  String json = "{";
+  json += "\"id\":\"" + String(MINER_ID) + "\",";
+  json += "\"zone\":" + String(currentZone) + ",";
+  json += "\"gas\":" + String(currentGas) + ",";
+  json += "\"temp\":" + String(currentTemp, 1) + ",";
+  json += "\"hum\":" + String(currentHum, 1) + ",";
+  json += "\"danger\":" + String(currentDanger ? "true" : "false");
+  json += "}";
+  server.send(200, "application/json", json);
+}
+
+void handleRoot() {
+  sendCorsHeaders();
+  server.send(200, "text/plain", "ESP32 Mine Safety Unit Online. JSON: /data");
+}</pre>
       </div>
     </div></div>
 
@@ -1028,10 +1100,22 @@ void loop() {
           clearTimeout(timeoutId);
           if (res.ok) {
             const d = await res.json();
-            telemetry.gas = d.gas_ppm !== undefined ? Number(d.gas_ppm) : (d.gas !== undefined ? Number(d.gas) : telemetry.gas);
-            telemetry.temp = d.temp_c !== undefined ? Number(d.temp_c) : (d.temp !== undefined ? Number(d.temp) : telemetry.temp);
-            telemetry.hum = d.humidity !== undefined ? Number(d.humidity) : (d.hum !== undefined ? Number(d.hum) : telemetry.hum);
-                        isLiveHardware = true;
+            telemetry.gas = d.gas !== undefined ? Number(d.gas) : (d.gas_ppm !== undefined ? Number(d.gas_ppm) : telemetry.gas);
+            telemetry.temp = d.temp !== undefined ? Number(d.temp) : (d.temp_c !== undefined ? Number(d.temp_c) : telemetry.temp);
+            telemetry.hum = d.hum !== undefined ? Number(d.hum) : (d.humidity !== undefined ? Number(d.humidity) : telemetry.hum);
+            
+            // Support ESP32 BLE Zone Tracking (0=Transit, 1=MINE_ZONE_1, 2=MINE_ZONE_2)
+            if (d.zone !== undefined) {
+              telemetry.zone = Number(d.zone);
+              syncBleZonePosition(telemetry.zone);
+            }
+            if (d.danger !== undefined) {
+              telemetry.hardwareDanger = Boolean(d.danger);
+            }
+            if (d.id) {
+              telemetry.minerId = d.id;
+            }
+            isLiveHardware = true;
           } else {
             isLiveHardware = false;
           }
@@ -1051,7 +1135,7 @@ void loop() {
       const liveBadge = document.getElementById('badge-connection');
       if (liveBadge) {
         if (isLiveHardware) {
-          liveBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> ESP32 Wi-Fi Live (192.168.4.1)';
+          liveBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> MineSafety_01 Live (192.168.4.1)';
           liveBadge.className = 'text-xs font-mono-tech px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5';
         } else {
           liveBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span> Демо-симулятор';
@@ -1379,6 +1463,33 @@ void loop() {
     // ==========================================
     let isEvacuated = false;
     let selectedZoneId = 'zone1';
+    let currentBleZone = 1;
+
+    // Sync Miner_01 token on the map according to ESP32 BLE scan
+    function syncBleZonePosition(zoneNum) {
+      if (isEvacuated) return; // Keep in refuge chamber if emergency evacuation active
+      currentBleZone = zoneNum;
+      const token = document.getElementById('svg-token-402');
+      const mcardZone = document.getElementById('mcard-zone-402');
+      const mcardStat = document.getElementById('mcard-status-402');
+
+      if (zoneNum === 1) {
+        // Zone 1: Штрек №4 (Active Stope / MINE_ZONE_1)
+        if (token) token.setAttribute('transform', 'translate(685, 362)');
+        if (mcardZone) mcardZone.innerText = "Зона 1: Штрек №4 (BLE: MINE_ZONE_1)";
+        if (mcardStat) mcardStat.innerText = "В зоне забоя (Работает)";
+      } else if (zoneNum === 2) {
+        // Zone 2: Вентиляционный штрек (MINE_ZONE_2)
+        if (token) token.setAttribute('transform', 'translate(835, 230)');
+        if (mcardZone) mcardZone.innerText = "Зона 2: Вентштрек (BLE: MINE_ZONE_2)";
+        if (mcardStat) mcardStat.innerText = "Вентствол (Осмотр струи)";
+      } else {
+        // Zone 0: Transit Drift / Connection
+        if (token) token.setAttribute('transform', 'translate(510, 290)');
+        if (mcardZone) mcardZone.innerText = "Сбойка / Вне зоны маяков (Z:0)";
+        if (mcardStat) mcardStat.innerText = "В переходе между горизонтами";
+      }
+    }
 
     const miners = [
       { id: 402, name: 'Иванов А.В.', role: 'Бригадир-проходчик', zone: 'zone1', pulse: 78, status: 'Работает', helmet: 'ТРК-04' },
