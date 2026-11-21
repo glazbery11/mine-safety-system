@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mine Safety Monitor — 3D</title>
+<style>
+/* VOICE: инженерный, спокойный — как стенд на защите проекта
+   IDEA: прибор лежит на тёмном столе в шахтной лампе, его можно крутить и открыть
+   PICTURE: живая 3D-модель синего чехла на молнии с горящим LCD
+   COLOUR and TYPE: угольный фон, королевский синий чехла, сигнальный янтарь для меток; Inter
+   LAYOUT: модель на всю ширину, панель узла справа (снизу на телефоне), размеры под моделью */
+:root{color-scheme:dark;--bg:#0d1117;--panel:#151b24;--line:#263041;--ink:#e8edf5;--mute:#93a1b5;--blue:#2f6fe4;--amber:#f5b942}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:clip}
+header{padding:20px max(4vw,16px) 8px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:baseline;justify-content:space-between}
+h1{margin:0;font-size:clamp(22px,3vw,32px);line-height:1.1;text-wrap:balance}
+header p{margin:0;color:var(--mute);font-size:14px}
+main{padding:8px max(4vw,16px) 32px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;max-width:1440px;margin:0 auto}
+.stage{position:relative;border-radius:16px;overflow:hidden;min-height:min(68vh,640px);background:radial-gradient(120% 90% at 50% 18%,#26324a 0%,#121925 55%,#0b0f15 100%);border:1px solid var(--line)}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#c:active{cursor:grabbing}
+.hud{position:absolute;left:14px;top:12px;font-size:13px;color:var(--mute);pointer-events:none;line-height:1.45}
+.hud b{color:var(--ink);font-weight:600}
+.bar{position:absolute;left:12px;right:12px;bottom:12px;display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-size:14px;color:var(--ink);background:rgba(21,27,36,.86);border:1px solid var(--line);border-radius:10px;padding:9px 13px;min-height:42px;cursor:pointer;backdrop-filter:blur(6px)}
+button:hover{border-color:#3d4b63}
+button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+button[aria-pressed=true]{background:var(--blue);border-color:#5b8ff0}
+.lbl{position:absolute;left:0;top:0;pointer-events:none;font-size:12px;white-space:nowrap;padding:3px 8px;border-radius:999px;background:rgba(11,15,21,.82);border:1px solid rgba(245,185,66,.55);color:#ffe2a6;transform:translate(-50%,-140%);transition:opacity .2s}
+.lbl::after{content:"";position:absolute;left:50%;bottom:-7px;width:1px;height:6px;background:rgba(245,185,66,.7)}
+.lbl.off{opacity:0}
+aside{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+aside h2{margin:0;font-size:18px;line-height:1.25}
+aside p{margin:0;color:#c4cddb;font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{font-size:13px;min-height:36px;padding:6px 10px;background:#1b2330}
+.chips button[aria-pressed=true]{background:var(--blue)}
+dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 10px;font-size:13px}
+dt{color:var(--mute)}dd{margin:0}
+.tip{font-size:13px;color:#ffe2a6;background:rgba(245,185,66,.08);border:1px solid rgba(245,185,66,.25);border-radius:10px;padding:8px 10px}
+.spec{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px}
+.spec div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.spec h3{margin:0 0 4px;font-size:14px;color:var(--mute);font-weight:600}
+.spec p{margin:0;font-size:15px}
+.err{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:24px;color:var(--mute)}
+@media(max-width:900px){main{grid-template-columns:minmax(0,1fr)}.stage{min-height:62vh}}
+@media(max-width:600px){button{font-size:13px;padding:8px 10px}.hud{font-size:12px}.stage{min-height:0;display:flex;flex-direction:column}#c{position:relative;height:58vh}.bar{position:static;padding:10px;border-top:1px solid var(--line)}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+</head>
+<body>
+<header>
+  <h1>Mine Safety Monitor — 3D-модель в синем чехле</h1>
+  <p>Покрутите мышью или пальцем · колесо — масштаб · нажмите на деталь</p>
+</header>
+<main>
+  <div class="stage" id="stage">
+    <canvas id="c" aria-label="3D-модель прибора в синем чехле на молнии"></canvas>
+    <div class="hud"><b>Защитный чехол EVA на молнии</b><br>170 × 100 × 77 мм · стенка 4 мм<br><span id="hudState">Крышка закрыта</span></div>
+    <div id="labels"></div>
+    <div class="bar">
+      <button id="bOpen" aria-pressed="false">Открыть чехол</button>
+      <button data-cam="iso" aria-pressed="true">Изометрия</button>
+      <button data-cam="front" aria-pressed="false">Спереди</button>
+      <button data-cam="top" aria-pressed="false">Сверху</button>
+      <button data-cam="side" aria-pressed="false">Сбоку (USB)</button>
+      <button id="bLabels" aria-pressed="true">Метки</button>
+      <button id="bSpin" aria-pressed="false">Автоповорот</button>
+      <button id="bStl">Скачать STL чехла</button>
+    </div>
+    <div class="err" id="err">Не удалось загрузить 3D-библиотеку. Проверьте подключение к интернету и обновите страницу.</div>
+  </div>
+  <aside aria-live="polite">
+    <div class="chips" id="chips"></div>
+    <h2 id="iTitle"></h2>
+    <p id="iDesc"></p>
+    <dl>
+      <dt>Подключение</dt><dd id="iPin"></dd>
+      <dt>Питание</dt><dd id="iPwr"></dd>
+      <dt>Интерфейс</dt><dd id="iProto"></dd>
+      <dt>Задача</dt><dd id="iRole"></dd>
+    </dl>
+    <div class="tip" id="iTip"></div>
+  </aside>
+  <section class="spec">
+    <div><h3>Корпус</h3><p>Жёсткий чехол EVA с тканевым покрытием, две половины на молнии, 170 × 100 × 77 мм.</p></div>
+    <div><h3>Окно LCD 1602</h3><p>Вырез 76 × 30 мм в центре крышки; модуль 80 × 36 мм держится под тканью.</p></div>
+    <div><h3>Датчики на крышке</h3><p>Рядом с экраном: MQ-135 — круглое отверстие Ø21 мм слева, DHT11 — окно 16 × 20 мм справа.</p></div>
+    <div><h3>Питание</h3><p>USB-кабель выходит через отверстие Ø9 мм в правом торце (питание от павербанка).</p></div>
+  </section>
+</main>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+{
+// ===================== dimensions (mm) — same as mine_safety_enclosure.scad
+const L=170, W=100, RP=32, WALL=4, ZIP=5;
+const BOT_H=40, BOT_R=12, TOP_H=32, TOP_R=22;
+const HX=L/2, HZ=W/2, Y0=ZIP/2;
+const TOP_Y=Y0+TOP_H, BOT_Y=-(Y0+BOT_H);
+const WIN={w:76,d:30,x:4,z:0};
+const MQ={x:-48.5,z:0}, DHT={x:52.5,z:0,w:16,h:20}, USB={z:-10,y:-14};
+
+const stage=document.getElementById('stage'), canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=0.95;
+const scene=new THREE.Scene();
+const pmrem=new THREE.PMREMGenerator(renderer);
+scene.environment=pmrem.fromScene(new RoomEnvironment(),0.04).texture;
+scene.environmentIntensity=0.55;
+const camera=new THREE.PerspectiveCamera(35,1,1,5000);
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.minDistance=160; controls.maxDistance=900;
+controls.target.set(0,-4,0);
+
+scene.add(new THREE.HemisphereLight(0xcfe0ff,0x20242c,0.55));
+const key=new THREE.DirectionalLight(0xffffff,2.2);
+key.position.set(140,260,180); key.castShadow=true;
+key.shadow.mapSize.set(2048,2048);
+Object.assign(key.shadow.camera,{left:-200,right:200,top:200,bottom:-200,near:50,far:700});
+key.shadow.bias=-0.0004; key.shadow.radius=4;
+scene.add(key);
+const rim=new THREE.DirectionalLight(0x9cc0ff,0.8); rim.position.set(-220,120,-200); scene.add(rim);
+
+// ground (desk)
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),new THREE.ShadowMaterial({opacity:0.45}));
+ground.rotation.x=-Math.PI/2; ground.position.y=BOT_Y-0.2; ground.receiveShadow=true; scene.add(ground);
+
+// ===================== procedural textures
+function canvasTex(w,h,draw,srgb){const cv=document.createElement('canvas');cv.width=w;cv.height=h;draw(cv.getContext('2d'),w,h);
+  const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=renderer.capabilities.getMaxAnisotropy();
+  if(srgb)t.colorSpace=THREE.SRGBColorSpace;return t;}
+// nylon twill weave (height map)
+const weave=canvasTex(512,512,(g,w,h)=>{g.fillStyle='#808080';g.fillRect(0,0,w,h);
+  const n=64,s=w/n;
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++){const over=((i+j*2)%4)<2;
+    const v=over?170+Math.random()*30:70+Math.random()*25;g.fillStyle=`rgb(${v},${v},${v})`;
+    if(over)g.fillRect(i*s+0.5,j*s,s-1,s);else g.fillRect(i*s,j*s+0.5,s,s-1);}
+});
+const fabricColor=canvasTex(256,256,(g,w,h)=>{g.fillStyle='#ffffff';g.fillRect(0,0,w,h);
+  for(let k=0;k<1800;k++){const v=228+Math.random()*27;g.fillStyle=`rgb(${v},${v},${v})`;g.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*2,1);}},true);
+const ribs=canvasTex(64,64,(g,w,h)=>{for(let x=0;x<w;x++){const v=128+100*Math.sin(x/w*Math.PI*2*4);g.fillStyle=`rgb(${v},${v},${v})`;g.fillRect(x,0,1,h);}});
+const meshTex=canvasTex(256,256,(g,w,h)=>{g.fillStyle='#c9ccd1';g.fillRect(0,0,w,h);g.fillStyle='#2a2d33';
+  const s=w/24;for(let i=0;i<24;i++)for(let j=0;j<24;j++){g.beginPath();g.arc(i*s+s/2,j*s+s/2,s*0.33,0,7);g.fill();}},true);
+const dhtTex=canvasTex(128,160,(g,w,h)=>{g.fillStyle='#4aa3e2';g.fillRect(0,0,w,h);g.fillStyle='#173f66';
+  const cols=4,rows=5,mx=14,my=14,gx=(w-2*mx)/cols,gy=(h-2*my)/rows;
+  for(let i=0;i<cols;i++)for(let j=0;j<rows;j++)g.fillRect(mx+i*gx+4,my+j*gy+4,gx-8,gy-8);},true);
+
+const M={
+  fabric:new THREE.MeshPhysicalMaterial({color:0x163fae,map:fabricColor,roughness:0.8,sheen:0.45,sheenRoughness:0.5,sheenColor:new THREE.Color(0x3d6fe0),bumpMap:weave,bumpScale:0.9}),
+  piping:new THREE.MeshPhysicalMaterial({color:0x143aa0,roughness:0.7,sheen:0.4,sheenColor:new THREE.Color(0x3d6fe0),bumpMap:weave,bumpScale:0.5}),
+  tape:new THREE.MeshStandardMaterial({color:0x15367f,roughness:0.85,bumpMap:ribs,bumpScale:1.2}),
+  teeth:new THREE.MeshStandardMaterial({color:0x10275a,roughness:0.35,metalness:0.05}),
+  foam:new THREE.MeshStandardMaterial({color:0x22252b,roughness:1,side:THREE.BackSide}),
+  foamCut:new THREE.MeshStandardMaterial({color:0x2a2e36,roughness:1,side:THREE.DoubleSide}),
+  metal:new THREE.MeshStandardMaterial({color:0xc4c8ce,metalness:0.85,roughness:0.32}),
+  black:new THREE.MeshStandardMaterial({color:0x111214,roughness:0.6}),
+  pcbGreen:new THREE.MeshStandardMaterial({color:0x0f7a3c,roughness:0.55}),
+  pcbBlack:new THREE.MeshStandardMaterial({color:0x15171b,roughness:0.5}),
+  gold:new THREE.MeshStandardMaterial({color:0xd8b25a,metalness:0.9,roughness:0.3}),
+  cable:new THREE.MeshStandardMaterial({color:0x0e0f11,roughness:0.45}),
+};
+weave.repeat.set(1/26,1/26); fabricColor.repeat.set(1/90,1/90);
+
+// ===================== rounded-rectangle perimeter (structured, so slices match)
+const SEG={sx:28,sz:14,arc:14};
+function ring(d,y){ // inset d from the outer plan outline
+  const hx=HX-d,hz=HZ-d,r=RP-d,ax=hx-r,az=hz-r,pts=[];
+  const corners=[[ax,az,0],[-ax,az,Math.PI/2],[-ax,-az,Math.PI],[ax,-az,1.5*Math.PI]];
+  // walk: +x straight side (front z+ edge goes from +x to -x)… build CCW seen from top
+  const push=(x,z)=>pts.push(new THREE.Vector3(x,y,z));
+  for(let c=0;c<4;c++){const [cx,cz,a0]=corners[c];
+    for(let k=0;k<SEG.arc;k++){const a=a0+k/SEG.arc*Math.PI/2;push(cx+r*Math.cos(a),cz+r*Math.sin(a));}
+    const n=(c%2===0)?SEG.sx:SEG.sz;const [nx,nz]=corners[(c+1)%4];
+    const ea=a0+Math.PI/2,sx=cx+r*Math.cos(ea),sz=cz+r*Math.sin(ea),tx=nx+r*Math.cos(ea),tz=nz+r*Math.sin(ea);
+    for(let k=0;k<n;k++){const t=k/n;push(sx+(tx-sx)*t,sz+(tz-sz)*t);}
+  }
+  return pts;
+}
+const crown=(x,z,d)=>{ // gentle dome on the lid, zero at the cap border
+  const hx=HX-d,hz=HZ-d,r=RP-d,qx=Math.abs(x)-(hx-r),qz=Math.abs(z)-(hz-r);
+  const out=Math.hypot(Math.max(qx,0),Math.max(qz,0))+Math.min(Math.max(qx,qz),0)-r; // sdf (<0 inside)
+  const t=Math.min(1,Math.max(0,-out/30));return 3.2*t*t*(3-2*t);};
+
+// half shell: profile from the seam (y0) outward; dir=+1 lid, -1 bottom
+function profile(dir,y0,h,rf,inset){const p=[],hw=h-rf;
+  p.push([inset,y0]);p.push([inset,y0+dir*hw*0.5]);p.push([inset,y0+dir*hw]);
+  const K=14;for(let k=1;k<=K;k++){const a=k/K*Math.PI/2;p.push([inset+(rf-inset)*(1-Math.cos(a))+0*inset,y0+dir*(hw+(rf-inset)*Math.sin(a))]);}
+  return p;}
+function loft(prof,flip){
+  const rings=prof.map(([d,y])=>ring(d,y)),n=rings[0].length,pos=[],uv=[],idx=[];
+  let vAcc=0;
+  rings.forEach((r,i)=>{if(i>0){const a=prof[i-1],b=prof[i];vAcc+=Math.hypot(b[0]-a[0],b[1]-a[1]);}
+    let uAcc=0;for(let k=0;k<=n;k++){const p=r[k%n];if(k>0)uAcc+=p.distanceTo(r[k-1]);pos.push(p.x,p.y,p.z);uv.push(uAcc,vAcc);}});
+  for(let i=0;i<rings.length-1;i++)for(let k=0;k<n;k++){const a=i*(n+1)+k,b=a+1,c=a+n+1,d=c+1;
+    if(flip)idx.push(a,b,c,b,d,c);else idx.push(a,c,b,b,c,d);}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;}
+function cap(d,y,dir,hole,crowned){ // flat cap at inset d, optional rectangular hole
+  const pts=ring(d,y),shape=new THREE.Shape(pts.map(p=>new THREE.Vector2(p.x,-p.z)));
+  if(hole){const h=new THREE.Path(),x0=hole.x-hole.w/2,x1=hole.x+hole.w/2,z0=-(hole.z-hole.d/2),z1=-(hole.z+hole.d/2);
+    h.moveTo(x0,z0);h.lineTo(x0,z1);h.lineTo(x1,z1);h.lineTo(x1,z0);h.lineTo(x0,z0);shape.holes.push(h);}
+  const g=new THREE.ShapeGeometry(shape,1);
+  if(dir>0)g.rotateX(-Math.PI/2);else g.rotateX(Math.PI/2);
+  const p=g.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i);
+    p.setY(i,y+(crowned?crown(x,z,d):0));}
+  // planar uv in mm
+  const uvA=g.attributes.uv;for(let i=0;i<p.count;i++)uvA.setXY(i,p.getX(i),p.getZ(i));
+  g.computeVertexNormals();return g;}
+function annulus(y,d0,d1,flipUp){ // flat ring between two insets (seam edge)
+  const a=ring(d0,y),b=ring(d1,y),n=a.length,pos=[],idx=[],uv=[];
+  for(let k=0;k<=n;k++){const p=a[k%n],q=b[k%n];pos.push(p.x,p.y,p.z,q.x,q.y,q.z);uv.push(k,0,k,1);}
+  for(let k=0;k<n;k++){const i=k*2;if(flipUp)idx.push(i,i+2,i+1,i+1,i+2,i+3);else idx.push(i,i+1,i+2,i+1,i+3,i+2);}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;}
+
+const pickables=[];
+function mk(geo,mat,comp,shadow=true){const m=new THREE.Mesh(geo,mat);m.castShadow=shadow;m.receiveShadow=true;if(comp){m.userData.comp=comp;pickables.push(m);}return m;}
+
+// ===================== BOTTOM HALF
+const bottom=new THREE.Group(); scene.add(bottom);
+const bProf=profile(-1,-Y0,BOT_H,BOT_R,0);
+bottom.add(mk(loft(bProf,true),M.fabric,'casing'));
+bottom.add(mk(cap(BOT_R,BOT_Y,-1,null,false),M.fabric,'casing'));
+const biProf=profile(-1,-Y0,BOT_H-WALL,BOT_R-WALL,0).map(([d,y])=>[d+WALL,y]);
+bottom.add(mk(loft(biProf,true),M.foam,null,false));
+bottom.add(mk(cap(BOT_R,BOT_Y+WALL,-1,null,false),M.foam,null,false));
+bottom.add(mk(annulus(-Y0,0,WALL,true),M.foamCut,null,false));
+
+// ===================== LID (pivot on the back edge)
+const pivot=new THREE.Group(); pivot.position.set(0,0,-HZ); scene.add(pivot);
+const lid=new THREE.Group(); lid.position.set(0,0,HZ); pivot.add(lid);
+const tProf=profile(1,Y0,TOP_H,TOP_R,0);
+lid.add(mk(loft(tProf,false),M.fabric,'casing'));
+lid.add(mk(cap(TOP_R,TOP_Y,1,WIN,true),M.fabric,'casing'));
+const tiProf=profile(1,Y0,TOP_H-WALL,TOP_R-WALL,0).map(([d,y])=>[d+WALL,y]);
+lid.add(mk(loft(tiProf,false),M.foam,null,false));
+const innerCap=cap(TOP_R,TOP_Y-WALL,1,WIN,false); lid.add(mk(innerCap,M.foam,null,false));
+lid.add(mk(annulus(Y0,0,WALL,false),M.foamCut,null,false));
+// window rim (cut edge of fabric + foam)
+{const x0=WIN.x-WIN.w/2,x1=WIN.x+WIN.w/2,z0=WIN.z-WIN.d/2,z1=WIN.z+WIN.d/2;
+ const corners=[[x0,z0],[x1,z0],[x1,z1],[x0,z1]],pos=[],idx=[];
+ corners.forEach(([x,z],i)=>{const yt=TOP_Y+crown(x,z,TOP_R);pos.push(x,yt+0.05,z,x,yt-1.2,z,x,TOP_Y-WALL,z);});
+ for(let i=0;i<4;i++){const a=i*3,b=((i+1)%4)*3;idx.push(a,b,a+1,b,b+1,a+1,a+1,b+1,a+2,b+1,b+2,a+2);}
+ const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();
+ const cols=[];for(let i=0;i<4;i++)cols.push(0.16,0.3,0.7, 0.14,0.15,0.18, 0.12,0.13,0.15);
+ g.setAttribute('color',new THREE.Float32BufferAttribute(cols,3));
+ lid.add(mk(g,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide}),null,false));
+ // frayed threads along the cut
+ const fp=[],fc=[];const edge=(ax,az,bx,bz,nx,nz,count)=>{for(let k=0;k<count;k++){const t=Math.random(),x=ax+(bx-ax)*t,z=az+(bz-az)*t,y=TOP_Y+crown(x,z,TOP_R)+0.1;
+   const len=0.6+Math.random()*2.4,ang=(Math.random()-0.5)*1.4,dx=nx*Math.cos(ang)-nz*Math.sin(ang),dz=nz*Math.cos(ang)+nx*Math.sin(ang);
+   fp.push(x-nx*0.6,y,z-nz*0.6,x+dx*len,y+(Math.random()-0.3)*0.9,z+dz*len);const c=Math.random()<0.12?[0.62,0.7,0.88]:[0.2,0.36,0.82];fc.push(...c,...c);}};
+ edge(x0,z0,x1,z0,0,1,110);edge(x0,z1,x1,z1,0,-1,110);edge(x0,z0,x0,z1,1,0,50);edge(x1,z0,x1,z1,-1,0,50);
+ const fg=new THREE.BufferGeometry();fg.setAttribute('position',new THREE.Float32BufferAttribute(fp,3));fg.setAttribute('color',new THREE.Float32BufferAttribute(fc,3));
+ lid.add(new THREE.LineSegments(fg,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:0.7})));}
+
+// ===================== ZIPPER: tapes, piping, interlocking teeth, slider
+function tubeAlong(d,y,r,mat,parent){const pts=ring(d,y);const curve=new THREE.CatmullRomCurve3(pts,true,'centripetal');
+  const g=new THREE.TubeGeometry(curve,pts.length*2,r,10,true);const uvA=g.attributes.uv;for(let i=0;i<uvA.count;i++)uvA.setXY(i,uvA.getX(i)*480,uvA.getY(i)*12);
+  const m=mk(g,mat,'casing');parent.add(m);return m;}
+function tape(yA,yB,parent){const pr=[[-0.9,yA],[-0.9,yB]];parent.add(mk(loft(pr,yA>yB),M.tape,'casing'));}
+tape(-Y0,-0.2,bottom); tape(0.2,Y0,lid);
+tubeAlong(-0.6,-Y0-0.9,1.9,M.piping,bottom); tubeAlong(-0.6,Y0+0.9,1.9,M.piping,lid);
+{const pts=ring(-0.7,0),n=pts.length,per=[];let tot=0;for(let k=0;k<n;k++){const a=pts[k],b=pts[(k+1)%n];per.push(tot);tot+=a.distanceTo(b);}
+ const pitch=1.5,count=Math.floor(tot/pitch),tg=new THREE.BoxGeometry(1.0,1.3,1.6);
+ const lowT=new THREE.InstancedMesh(tg,M.teeth,Math.ceil(count/2)),upT=new THREE.InstancedMesh(tg,M.teeth,Math.ceil(count/2));
+ let li=0,ui=0;const o=new THREE.Object3D();
+ for(let i=0;i<count;i++){const s=i*pitch;let k=0;while(k<n-1&&per[k+1]<s)k++;const a=pts[k],b=pts[(k+1)%n],t=(s-per[k])/a.distanceTo(b);
+   const p=a.clone().lerp(b,t),dir=b.clone().sub(a).normalize();o.position.copy(p);o.lookAt(p.clone().add(new THREE.Vector3(dir.z,0,-dir.x)));
+   if(i%2){o.position.y=-0.45;o.updateMatrix();lowT.setMatrixAt(li++,o.matrix);}else{o.position.y=0.45;o.updateMatrix();upT.setMatrixAt(ui++,o.matrix);}}
+ lowT.count=li;upT.count=ui;bottom.add(lowT);
+ // upper teeth live in lid space (lid group is offset by +HZ in z inside the pivot)
+ lid.add(upT);}
+const slider=new THREE.Group();
+{const body=mk(new THREE.BoxGeometry(13,6.5,4),M.metal,'casing');slider.add(body);
+ const tab=mk(new THREE.BoxGeometry(5,15,1.4),M.metal,'casing');tab.position.set(0,-9,1.6);tab.rotation.x=0.18;slider.add(tab);
+ const hole=mk(new THREE.BoxGeometry(2.2,4,1.6),M.black,null,false);hole.position.set(0,-13,1.65);hole.rotation.x=0.18;slider.add(hole);
+ slider.position.set(HX-RP-8,0,-HZ-3.2);slider.rotation.y=Math.PI;bottom.add(slider);}
+
+// ===================== LCD 1602 + I2C backpack (mounted in the lid)
+const lcdCanvas=document.createElement('canvas');lcdCanvas.width=1024;lcdCanvas.height=240;
+const lcdTex=new THREE.CanvasTexture(lcdCanvas);lcdTex.colorSpace=THREE.SRGBColorSpace;lcdTex.anisotropy=8;
+function drawLCD(l1,l2){const g=lcdCanvas.getContext('2d'),w=lcdCanvas.width,h=lcdCanvas.height;
+  const grd=g.createLinearGradient(0,0,0,h);grd.addColorStop(0,'#2a5bf0');grd.addColorStop(1,'#1d43c9');g.fillStyle=grd;g.fillRect(0,0,w,h);
+  const cw=(w-80)/16,chh=(h-60)/2;
+  for(let r=0;r<2;r++)for(let c=0;c<16;c++){g.fillStyle='rgba(120,160,255,0.16)';g.fillRect(40+c*cw+3,30+r*chh+6,cw-6,chh-12);}
+  g.fillStyle='#eef4ff';g.font=`600 ${Math.round(chh*0.78)}px "Courier New",monospace`;g.textBaseline='middle';
+  [l1,l2].forEach((s,r)=>{for(let c=0;c<16;c++){const ch=s[c]||' ';g.fillText(ch,40+c*cw+cw*0.12,30+r*chh+chh/2+2);}});
+  lcdTex.needsUpdate=true;}
+const lcd=new THREE.Group();
+{const yb=TOP_Y-WALL-0.2; // underside of the lid
+ const pcb=mk(new THREE.BoxGeometry(80,1.6,36),M.pcbGreen,'lcd');pcb.position.y=yb-9.2;lcd.add(pcb);
+ const bezel=mk(new THREE.BoxGeometry(75,7.2,29),M.black,'lcd');bezel.position.y=yb-4.8;lcd.add(bezel);
+ const scr=mk(new THREE.PlaneGeometry(64.5,16),new THREE.MeshStandardMaterial({map:lcdTex,emissive:0xffffff,emissiveMap:lcdTex,emissiveIntensity:0.85,roughness:0.25}),'lcd',false);
+ scr.rotation.x=-Math.PI/2;scr.position.y=yb-1.15;lcd.add(scr);
+ const glass=new THREE.Mesh(new THREE.PlaneGeometry(66,18),new THREE.MeshPhysicalMaterial({color:0xffffff,transmission:0.95,roughness:0.05,transparent:true,opacity:0.18}));
+ glass.rotation.x=-Math.PI/2;glass.position.y=yb-1.05;lcd.add(glass);
+ const bp=mk(new THREE.BoxGeometry(42,1.5,19),M.pcbBlack,'lcd');bp.position.set(0,yb-12.5,0);lcd.add(bp);
+ const pot=mk(new THREE.CylinderGeometry(3,3,3,20),new THREE.MeshStandardMaterial({color:0x2f6fe4,roughness:0.5}),'lcd');pot.position.set(-12,yb-14.6,4);lcd.add(pot);
+ for(let i=0;i<4;i++){const pin=mk(new THREE.BoxGeometry(0.7,6,0.7),M.gold,'lcd');pin.position.set(-20.5,yb-15.5,-3.8+i*2.54);lcd.add(pin);}
+ lcd.userData.i2c=new THREE.Vector3(-20.5,yb-18,0);}
+lcd.position.x=WIN.x;lid.add(lcd);
+
+// ===================== MQ-135 gas sensor (on the lid, left of the screen)
+const mq=new THREE.Group();
+{const c=crown(MQ.x,MQ.z,TOP_R);mq.position.set(MQ.x,TOP_Y+c,MQ.z);mq.rotation.x=-Math.PI/2; // local +z = up
+ const cut=mk(new THREE.RingGeometry(10.2,12.6,40),M.foamCut,null,false);cut.position.z=0.25;mq.add(cut);
+ const flange=mk(new THREE.CylinderGeometry(11.6,11.6,1.2,40),M.black,'mq135');flange.rotation.x=Math.PI/2;flange.position.z=0.7;mq.add(flange);
+ const cap=mk(new THREE.CylinderGeometry(9.6,9.8,7,48,1,true),new THREE.MeshStandardMaterial({map:meshTex,metalness:0.7,roughness:0.4,color:0xffffff,side:THREE.DoubleSide}),'mq135');
+ meshTex.repeat.set(3,0.6);cap.rotation.x=Math.PI/2;cap.position.z=4.6;mq.add(cap);
+ const faceTex=meshTex.clone();faceTex.repeat.set(1,1);faceTex.needsUpdate=true;
+ const face=mk(new THREE.CircleGeometry(9.6,48),new THREE.MeshStandardMaterial({map:faceTex,metalness:0.7,roughness:0.38}),'mq135');face.position.z=8.1;mq.add(face);
+ const lip=mk(new THREE.TorusGeometry(9.7,0.7,10,48),M.metal,'mq135');lip.position.z=8.0;mq.add(lip);
+ const base=mk(new THREE.CylinderGeometry(11,11,2.2,40),M.metal,'mq135');base.rotation.x=Math.PI/2;base.position.z=1.6;mq.add(base);
+ // module PCB under the lid
+ const pcb=mk(new THREE.BoxGeometry(26,20,1.6),new THREE.MeshStandardMaterial({color:0x1f4fbf,roughness:0.6}),'mq135');pcb.position.z=-WALL-1.2-c;mq.add(pcb);}
+lid.add(mq);
+
+// ===================== DHT11 (on the lid, right of the screen)
+const dht=new THREE.Group();
+{const c=crown(DHT.x,DHT.z,TOP_R);dht.position.set(DHT.x,TOP_Y+c,DHT.z);dht.rotation.x=-Math.PI/2;
+ const side=new THREE.MeshStandardMaterial({color:0x3f95d4,roughness:0.55});
+ const box=mk(new THREE.BoxGeometry(DHT.w,DHT.h,6),[side,side,side,side,new THREE.MeshStandardMaterial({map:dhtTex,roughness:0.55}),side],'dht11');
+ box.position.z=3.2;dht.add(box);
+ const cut=mk(new THREE.PlaneGeometry(DHT.w+3,DHT.h+3),M.foamCut,null,false);cut.position.z=0.2;dht.add(cut);
+ const pcb=mk(new THREE.BoxGeometry(20,26,1.6),new THREE.MeshStandardMaterial({color:0x1f4fbf,roughness:0.6}),'dht11');pcb.position.z=-WALL-1.2-c;dht.add(pcb);}
+lid.add(dht);
+
+// ===================== ESP32 DevKit inside
+const esp=new THREE.Group();
+{const y=BOT_Y+WALL+5;esp.position.set(-8,y,-8);
+ esp.add(mk(new THREE.BoxGeometry(51,1.6,28),M.pcbBlack,'esp32'));
+ const sh=mk(new THREE.BoxGeometry(18,3,25),M.metal,'esp32');sh.position.set(-10,2.3,0);esp.add(sh);
+ const ant=mk(new THREE.BoxGeometry(6,0.4,18),new THREE.MeshStandardMaterial({color:0xb08a3a,metalness:0.6,roughness:0.4}),'esp32');ant.position.set(-22,1.0,0);esp.add(ant);
+ const usb=mk(new THREE.BoxGeometry(5,2.6,7.5),M.metal,'esp32');usb.position.set(24.5,2.1,0);esp.add(usb);
+ const led=mk(new THREE.BoxGeometry(1.6,0.8,1),new THREE.MeshStandardMaterial({color:0x6aa8ff,emissive:0x3b82f6,emissiveIntensity:2.5}),'esp32',false);led.position.set(17,1.2,8);esp.add(led);
+ const hdr=new THREE.InstancedMesh(new THREE.BoxGeometry(0.64,8,0.64),M.gold,30),o=new THREE.Object3D();
+ for(let s=0;s<2;s++)for(let i=0;i<15;i++){o.position.set(-17.8+i*2.54,-3.4,s?12.7:-12.7);o.updateMatrix();hdr.setMatrixAt(s*15+i,o.matrix);}esp.add(hdr);
+ for(const sx of[-20,20])for(const sz of[-10,10]){const st=mk(new THREE.CylinderGeometry(2.6,2.6,5,16),new THREE.MeshStandardMaterial({color:0xe9e3d3,roughness:0.6}),null);st.position.set(sx,-3.3,sz);esp.add(st);}
+ esp.userData.port=new THREE.Vector3(27,2.1,0);}
+bottom.add(esp);
+
+// ===================== wires and USB cable
+const wireMats=[0xd93b3b,0x1b1b1b,0xf2c230,0x2fa84f].map(c=>new THREE.MeshStandardMaterial({color:c,roughness:0.5}));
+function wire(points,mat,parent){const g=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),40,0.55,6);const m=mk(g,mat,null,false);parent.add(m);return m;}
+const V=(x,y,z)=>new THREE.Vector3(x,y,z);
+// wires from the ESP32 up to the lid (LCD over I2C, MQ-135, DHT11) — rebuilt when the lid moves
+const lidWires=[];
+const LW=(sx,sz,ex,ez,mat,ey=TOP_Y-WALL-2.6)=>lidWires.push({s:V(sx,BOT_Y+WALL+9,sz),e:V(ex,ey,ez),mat,mesh:null});
+for(let i=0;i<4;i++)LW(-12+(i-1.5)*2.5,-20.7,WIN.x-20.5,-3.8+i*2.54,wireMats[(i+1)%4],TOP_Y-WALL-18.6);         // LCD I2C backpack
+for(let i=0;i<3;i++)LW(-17+i*2.5,4.7,MQ.x+8,-2.5+i*2.5,wireMats[i]);                       // MQ-135: VCC, GND, AO
+for(let i=0;i<3;i++)LW(8+i*2.5,4.7,DHT.x-6,-2.5+i*2.5,wireMats[i]);                        // DHT11: VCC, GND, DATA
+function updateI2C(){lidWires.forEach((w,k)=>{const p=w.e.clone();lid.localToWorld(p);bottom.worldToLocal(p);
+    const s0=w.s,lift=Math.max(0,p.y-TOP_Y+WALL)*0.15;
+    const pts=[s0,V(s0.x,BOT_Y+WALL+16,s0.z-8),V(s0.x*0.7,BOT_Y+WALL+20,-HZ+16),V((s0.x+p.x)/2,(p.y+BOT_Y)/2+14+lift,(p.z-HZ)/2-4),V(p.x,p.y-5,p.z),p];
+    const g=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),56,0.5,6);
+    if(w.mesh){w.mesh.geometry.dispose();w.mesh.geometry=g;}else{w.mesh=mk(g,w.mat,null,false);bottom.add(w.mesh);}});}
+// USB cable: from ESP32 port, through the right end, down to the desk
+{const ex=HX+0.5,ys=USB.y,zs=USB.z,port=esp.userData.port.clone().add(esp.position);
+ const inside=[port,V(port.x+8,port.y+1,port.z),V(HX-14,ys-2,zs),V(HX-2,ys,zs)];
+ wire(inside,M.cable,bottom).geometry=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(inside),40,2,10);
+ const boot=mk(new THREE.CylinderGeometry(3.4,2.6,11,20),M.cable,'usb');boot.rotation.z=Math.PI/2;boot.position.set(ex+5,ys,zs);bottom.add(boot);
+ const ringC=mk(new THREE.RingGeometry(3.6,5.6,30),M.foamCut,null,false);ringC.rotation.y=Math.PI/2;ringC.position.set(HX+0.3,ys,zs);bottom.add(ringC);
+ const out=[V(ex+9,ys,zs),V(ex+30,ys-2,zs-4),V(ex+52,BOT_Y+8,zs-22),V(ex+70,BOT_Y+2.3,zs-60),V(ex+90,BOT_Y+2.3,zs-140),V(ex+140,BOT_Y+2.3,zs-220)];
+ const c=mk(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(out),120,2.3,12),M.cable,'usb');bottom.add(c);}
+
+// ===================== component info (Inspector)
+const info={
+ casing:{n:'Чехол',t:'Защитный чехол EVA на молнии',d:'Жёсткий корпус из EVA-пены с тканевым покрытием: две скруглённые половины соединены молнией по периметру. В крышке вырезаны окно под экран и отверстия под оба датчика, в правом торце — ввод USB-кабеля.',pin:'Электроника закреплена внутри на стойках',pwr:'—',pr:'Размер 170 × 100 × 77 мм, стенка 4 мм',r:'Защита электроники от пыли, ударов и падений',tip:'Молния позволяет быстро открыть корпус на защите и показать плату ESP32 и проводку.'},
+ lcd:{n:'LCD 1602',t:'LCD 1602 с I2C-адаптером (PCF8574)',d:'Двухстрочный дисплей 16×2 с синей подсветкой. Показывает газ (G), температуру (T) и номер BLE-зоны (Z), а во второй строке — статус или тревогу.',pin:'SDA → GPIO 21, SCL → GPIO 22',pwr:'5 В (VIN)',pr:'I2C, адрес 0x27',r:'Локальная индикация для горняка',tip:'Модуль 80 × 36 мм шире окна 76 × 30 мм, поэтому ткань сама удерживает его сверху.'},
+ mq135:{n:'MQ-135',t:'Газоанализатор MQ-135',d:'Датчик на диоксиде олова (SnO₂) реагирует на CO, аммиак и другие газы. Металлическая сетка выведена наружу через круглое отверстие в крышке, слева от экрана.',pin:'AO → GPIO 34 (ADC1)',pwr:'5 В, нагреватель ≈ 150 мА',pr:'Аналоговый сигнал, АЦП 12 бит (0–4095)',r:'Обнаружение опасной концентрации газа',tip:'После включения датчик прогревается 40 с и запоминает базовый уровень; тревога — при скачке выше базы.'},
+ dht11:{n:'DHT11',t:'Датчик температуры и влажности DHT11',d:'Цифровой датчик микроклимата. Решётка датчика выходит в окно в крышке справа от экрана, чтобы воздух свободно проходил к сенсору.',pin:'DATA → GPIO 4',pwr:'3,3–5 В',pr:'Однопроводной цифровой протокол, 40 бит',r:'Контроль перегрева и влажности',tip:'Опрашивается раз в 1,5 с — чаще DHT11 не умеет.'},
+ esp32:{n:'ESP32',t:'ESP32 DevKit v1 (30 pin)',d:'Двухъядерный микроконтроллер 240 МГц с Wi-Fi и Bluetooth LE. Создаёт точку доступа, отдаёт JSON по HTTP и определяет зону по BLE-маякам телефонов.',pin:'GPIO 2, 4, 21, 22, 34',pwr:'5 В по USB от павербанка',pr:'Wi-Fi SoftAP + HTTP, BLE-сканирование',r:'Мозг прибора и связь с веб-панелью',tip:'Синий светодиод на плате (GPIO 2) дублирует тревогу.'},
+ usb:{n:'USB',t:'USB-кабель питания',d:'Кабель Micro-USB идёт от ESP32 через отверстие Ø9 мм в правом торце чехла к павербанку.',pin:'Разъём Micro-USB на ESP32',pwr:'5 В',pr:'—',r:'Автономное питание без компьютера',tip:'Отверстие расположено низко, чтобы кабель не мешал открывать крышку.'}};
+const chips=document.getElementById('chips');
+chips.innerHTML=Object.entries(info).map(([k,v])=>`<button data-comp="${k}" aria-pressed="false">${v.n}</button>`).join('');
+const $=id=>document.getElementById(id);
+let selected=null;
+const hl=new Map();
+function select(k){selected=k;const v=info[k];$('iTitle').textContent=v.t;$('iDesc').textContent=v.d;$('iPin').textContent=v.pin;$('iPwr').textContent=v.pwr;$('iProto').textContent=v.pr;$('iRole').textContent=v.r;$('iTip').textContent=v.tip;
+  chips.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.comp===k));
+  pickables.forEach(m=>{const mats=Array.isArray(m.material)?m.material:[m.material];mats.forEach(mt=>{if(!mt.emissive)return;if(!hl.has(mt))hl.set(mt,{c:mt.emissive.clone(),i:mt.emissiveIntensity});});});
+  hl.forEach((o,mt)=>{mt.emissive.copy(o.c);mt.emissiveIntensity=o.i;});
+  if(k!=='casing')pickables.filter(m=>m.userData.comp===k).forEach(m=>{(Array.isArray(m.material)?m.material:[m.material]).forEach(mt=>{if(mt.emissive&&mt.emissiveMap==null){mt.emissive.set(0x3a2a00);mt.emissiveIntensity=1;}});});}
+chips.addEventListener('click',e=>{const b=e.target.closest('button');if(b)select(b.dataset.comp);});
+// materials shared between parts would highlight together, so give each component its own copies
+pickables.forEach(m=>{if(m.userData.comp&&m.userData.comp!=='casing'){m.material=Array.isArray(m.material)?m.material.map(x=>x.clone()):m.material.clone();}});
+
+// click to pick
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();let down=null;
+canvas.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];});
+canvas.addEventListener('pointerup',e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;const r=canvas.getBoundingClientRect();
+  ndc.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(ndc,camera);
+  const hit=ray.intersectObjects(pickables,false)[0];if(hit)select(hit.object.userData.comp);});
+
+// ===================== labels
+const labelDefs=[['LCD 1602',()=>lid.localToWorld(V(WIN.x,TOP_Y+5,-16))],['MQ-135',()=>lid.localToWorld(V(MQ.x,TOP_Y+16,MQ.z))],['DHT11',()=>lid.localToWorld(V(DHT.x,TOP_Y+13,DHT.z))],['USB',()=>bottom.localToWorld(V(HX+12,USB.y+5,USB.z))],['ESP32',()=>bottom.localToWorld(V(-8,BOT_Y+WALL+12,-8)),()=>lidAngle>0.6],['Молния',()=>bottom.localToWorld(V(HX-RP-8,-8,-HZ-4))]];
+const labelBox=$('labels');const labels=labelDefs.map(([t])=>{const d=document.createElement('div');d.className='lbl';d.textContent=t;labelBox.appendChild(d);return d;});
+let showLabels=true;
+function placeLabels(){const r=canvas.getBoundingClientRect(),placed=[];labelDefs.forEach(([,f,vis],i)=>{const p=f().project(camera),el=labels[i];
+  const x=(p.x+1)/2*r.width,y=(1-p.y)/2*r.height;let ok=showLabels&&p.z<1&&(!vis||vis());
+  if(ok&&placed.some(([a,b])=>Math.abs(a-x)<86&&Math.abs(b-y)<30))ok=false;if(ok)placed.push([x,y]);
+  el.classList.toggle('off',!ok);el.style.left=x+'px';el.style.top=y+'px';});}
+
+// ===================== lid animation, cameras, controls
+let lidAngle=0,lidTarget=0;
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+$('bOpen').addEventListener('click',e=>{lidTarget=lidTarget?0:1;e.currentTarget.setAttribute('aria-pressed',!!lidTarget);e.currentTarget.textContent=lidTarget?'Закрыть чехол':'Открыть чехол';if(lidTarget&&cam==='iso')go('open');});
+const cams={iso:[V(205,170,255),V(0,-6,0)],front:[V(0,35,375),V(0,-8,0)],top:[V(0,390,30),V(0,0,0)],side:[V(380,45,40),V(0,-8,0)],open:[V(175,265,265),V(0,8,-25)]};
+let cam='iso',camAnim=null;
+const fitPos=k=>{const [p,q]=cams[k],f=Math.max(1,1.3/camera.aspect);return p.clone().sub(q).multiplyScalar(f).add(q);};
+function go(k){cam=k;document.querySelectorAll('[data-cam]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.cam===k));
+  camAnim={t:0,p0:camera.position.clone(),q0:controls.target.clone(),p1:fitPos(k),q1:cams[k][1]};if(reduce){camAnim.t=1;}}
+document.querySelectorAll('[data-cam]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.cam)));
+$('bLabels').addEventListener('click',e=>{showLabels=!showLabels;e.currentTarget.setAttribute('aria-pressed',showLabels);});
+$('bSpin').addEventListener('click',e=>{controls.autoRotate=!controls.autoRotate;controls.autoRotateSpeed=1.2;e.currentTarget.setAttribute('aria-pressed',controls.autoRotate);});
+$('bStl').addEventListener('click',()=>{ // case only, Z-up, millimetres
+  const grp=new THREE.Group();const add=(src)=>src.traverse(o=>{if(o.isMesh&&!o.isInstancedMesh&&o.userData.comp==='casing'){const m=new THREE.Mesh(o.geometry.clone().applyMatrix4(o.matrixWorld));grp.add(m);}});
+  const rx=pivot.rotation.x;pivot.rotation.x=0;scene.updateMatrixWorld(true);add(bottom);add(lid);pivot.rotation.x=rx;scene.updateMatrixWorld(true);
+  grp.rotation.x=Math.PI/2;grp.updateMatrixWorld(true);
+  const data=new STLExporter().parse(grp,{binary:true});const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'model/stl'}));a.download='mine_safety_blue_case.stl';a.click();});
+
+function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+const ro=new ResizeObserver(resize);ro.observe(canvas);resize();
+camera.position.copy(fitPos('iso'));
+// inside the claude.ai viewer pages cannot save files: hide the STL button there (it works on GitHub Pages / locally)
+if(window.claude&&typeof window.claude.use==='function')$('bStl').hidden=true;controls.target.copy(cams.iso[1]);
+
+// live LCD like the real firmware
+let gas=420,tick=0;
+function lcdUpdate(){gas=Math.round(Math.min(470,Math.max(390,gas+(Math.random()-0.5)*14)));
+  drawLCD(`G:${String(gas).padEnd(4)}T:24C Z:1`,'STATUS: NORMAL');}
+lcdUpdate();setInterval(lcdUpdate,1000);
+select('casing');updateI2C();
+
+const clock=new THREE.Clock();
+renderer.setAnimationLoop(()=>{const raw=clock.getDelta(),dt=Math.min(raw,0.05);
+  if(lidAngle!==lidTarget){const step=reduce?1:dt*1.6;lidAngle=lidTarget>lidAngle?Math.min(lidTarget,lidAngle+step):Math.max(lidTarget,lidAngle-step);
+    const e=lidAngle<0.5?2*lidAngle*lidAngle:1-Math.pow(-2*lidAngle+2,2)/2;pivot.rotation.x=-e*THREE.MathUtils.degToRad(105);scene.updateMatrixWorld(true);updateI2C();
+    $('hudState').textContent=lidAngle>0.99?'Чехол открыт':lidAngle<0.01?'Крышка закрыта':'Открывается…';}
+  if(camAnim){camAnim.t=Math.min(1,camAnim.t+Math.min(raw,0.25)*1.4);const e=1-Math.pow(1-camAnim.t,3);camera.position.lerpVectors(camAnim.p0,camAnim.p1,e);controls.target.lerpVectors(camAnim.q0,camAnim.q1,e);if(camAnim.t>=1)camAnim=null;}
+  controls.update();renderer.render(scene,camera);placeLabels();});
+window.__viewer={go,select,setLid:v=>{lidTarget=v;lidAngle=v;pivot.rotation.x=-v*THREE.MathUtils.degToRad(105);scene.updateMatrixWorld(true);updateI2C();$('hudState').textContent=v?'Чехол открыт':'Крышка закрыта';},toggleLabels:v=>{showLabels=v;}};
+}
+</script>
+<script>setTimeout(()=>{if(!window.__viewer){const e=document.getElementById('err');if(e)e.style.display='flex';}},8000);</script>
+</body>
+</html>
