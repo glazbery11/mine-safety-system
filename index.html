@@ -183,9 +183,9 @@
           </div>
 
           <div class="text-[11px] text-slate-400 space-y-1 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60 font-mono-tech">
-            <div class="flex justify-between"><span>Норма:</span> <span class="text-emerald-400">0 - 500 ppm</span></div>
-            <div class="flex justify-between"><span>Повышенный:</span> <span class="text-amber-400">500 - 1000 ppm</span></div>
-            <div class="flex justify-between"><span>Критический (Тревога):</span> <span class="text-rose-400">&gt; 1000 ppm</span></div>
+            <div class="flex justify-between"><span>Прогрев / Автокалибровка:</span> <span class="text-cyan-400">40 сек на старте</span></div>
+            <div class="flex justify-between"><span>Порог ESP32 (Hardware):</span> <span class="text-amber-400">База + 600 ADC</span></div>
+            <div class="flex justify-between"><span>Демо-порог (Слайдер):</span> <span class="text-rose-400">&gt; 1000 единиц</span></div>
           </div>
         </div>
 
@@ -224,9 +224,9 @@
           </div>
 
           <div class="text-[11px] text-slate-400 space-y-1 bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/60 font-mono-tech">
-            <div class="flex justify-between"><span>Порог перегрева:</span> <span class="text-amber-400">&gt; 28 °C (Тревога)</span></div>
-            <div class="flex justify-between"><span>Порог влажности:</span> <span class="text-cyan-400">&gt; 75% (Тревога)</span></div>
-            <div class="flex justify-between"><span>Статус климата:</span> <span class="text-emerald-400">В норме</span></div>
+            <div class="flex justify-between"><span>Перегрев (TEMP_MAX):</span> <span class="text-rose-400">&ge; 28.0 °C</span></div>
+            <div class="flex justify-between"><span>Тепловой стресс:</span> <span class="text-amber-400">&ge; 24.0°C и &ge; 75%</span></div>
+            <div class="flex justify-between"><span>Сырость / Сухость:</span> <span class="text-cyan-400">&ge; 85% / &le; 15%</span></div>
           </div>
         </div>
       </div>
@@ -339,9 +339,9 @@
                 </div>
               </div>
             </div>
-            <div class="text-[11px] font-mono-tech text-slate-400 flex justify-between border-t border-slate-800/80 pt-2">
-              <span>Связь: <span class="text-emerald-400">Wi-Fi SoftAP</span></span>
-              <span>Питание: <span class="text-slate-200">Батарея/USB</span></span>
+            <div id="dash-miner-rollcall" class="text-[11px] font-mono-tech text-slate-300 flex justify-between items-center border-t border-slate-800/80 pt-2">
+              <span id="dash-rollcall-badge" class="text-slate-400">⚒️ В рабочей выработке</span>
+              <span id="dash-rest-timer" class="text-cyan-400 font-bold hidden">REST: 00:00</span>
             </div>
           </div>
 
@@ -393,7 +393,7 @@
               📱 В Зону 2 (Тел. 2)
             </button>
             <button onclick="simulateBleZone(3)" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 font-semibold transition">
-              🛡️ В Камеру (SAFE_ZONE)
+              🛡️ В Камеру (Safe_Zone)
             </button>
             <button onclick="setScenario('gas')" class="text-xs px-3 py-1.5 rounded-lg bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 border border-rose-500/40 font-semibold transition">
               🚨 Газ &gt; 1000 PPM
@@ -597,13 +597,13 @@
               <text id="svg-zone2-status" x="618" y="376" fill="#06b6d4" font-size="9" font-family="monospace" font-weight="bold">Порог дальности: ~1-1.5 м</text>
             </g>
 
-            <!-- ================= REFUGE CHAMBER (КАМЕРА СПАСЕНИЯ) ================= -->
+            <!-- ================= REFUGE CHAMBER (Safe_Zone) ================= -->
             <g id="svg-chamber-group" class="cursor-pointer" onclick="selectZone('chamber')">
-              <rect id="svg-chamber-box" x="390" y="405" width="180" height="50" rx="6" fill="#0c1929" stroke="#38bdf8" stroke-width="2" />
-              <rect x="394" y="409" width="12" height="42" rx="2" fill="#0284c7" />
-              <text x="412" y="426" fill="#38bdf8" font-size="10.5" font-weight="bold" font-family="monospace">КАМЕРА СПАСЕНИЯ</text>
-              <text x="412" y="439" fill="#94a3b8" font-size="8.5" font-family="monospace">Укрытие при аварии • О₂ 48ч</text>
-              <text x="412" y="450" fill="#34d399" font-size="8.5" font-family="monospace">Безопасный рубеж</text>
+              <rect id="svg-chamber-box" x="360" y="405" width="240" height="54" rx="8" fill="#0c1929" stroke="#38bdf8" stroke-width="2" />
+              <rect x="364" y="410" width="12" height="44" rx="2" fill="#0284c7" />
+              <text x="383" y="423" fill="#38bdf8" font-size="10" font-weight="bold" font-family="monospace">SAFE ZONE (УКРЫТИЕ)</text>
+              <text x="383" y="436" fill="#94a3b8" font-size="8.5" font-family="monospace">📱 Маяк Safe_Zone • Тревоги ОТКЛ</text>
+              <text id="svg-chamber-timer" x="383" y="449" fill="#34d399" font-size="8.5" font-weight="bold" font-family="monospace">Перекличка • Таймер: 00:00</text>
             </g>
 
             <!-- ================= SINGLE ENTITY: MINE SAFETY ESP32 ================= -->
@@ -652,6 +652,14 @@
                 <span class="text-slate-400">Статус безопасности:</span>
                 <span id="mcard-safety-text" class="text-emerald-400 font-bold">В норме (Штатно)</span>
               </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400">Перекличка (evacuated):</span>
+                <span id="mcard-evacuated-text" class="text-slate-300 font-bold">Нет (В смене)</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-slate-400">Таймер отдыха (rest_sec):</span>
+                <span id="mcard-rest-text" class="text-cyan-400 font-bold">00:00</span>
+              </div>
               <div class="flex justify-between items-center border-t border-slate-800 pt-2">
                 <span class="text-slate-400">Газ MQ-135 (Пин D34):</span>
                 <span id="mcard-gas-text" class="text-rose-400 font-bold">185 ppm</span>
@@ -673,7 +681,7 @@
                 Тест: К Телефону 2
               </button>
               <button onclick="simulateBleZone(3)" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 font-semibold transition">
-                Тест: В Камеру (SAFE_ZONE)
+                Тест: В Камеру (Safe_Zone)
               </button>
             </div>
           </div>
@@ -697,7 +705,7 @@
 
                 <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800">
                   <div class="font-bold text-emerald-400">Телефон №3 (Камера аварийного спасения):</div>
-                  <div class="text-slate-400 mt-0.5">В настройках Bluetooth или в приложении задать имя устройства: <strong class="text-white">SAFE_ZONE</strong> (или SAFE)</div>
+                  <div class="text-slate-400 mt-0.5">В настройках Bluetooth или в приложении задать имя устройства: <strong class="text-white">Safe_Zone</strong> (точно с учетом регистра!)</div>
                 </div>
 
                 <div class="p-2.5 rounded-lg bg-slate-900/50 border border-slate-800/60 text-slate-400 text-[11px]">
@@ -834,7 +842,7 @@ WebServer server(80);
 BLEScan* pBLEScan;
 
 // 3. КРИТИЧЕСКИЕ ПОРОГИ ШАХТЫ И НАСТРОЙКИ ЗОН
-const float TEMP_MAX          = 26.0;  // Предельная температура (°C)
+const float TEMP_MAX          = 28.0;  // Предельная температура (°C)
 const float HEAT_STRESS_TEMP  = 24.0;  // Порог T для теплового стресса (°C)
 const float HEAT_STRESS_HUM   = 75.0;  // Порог H при повышенной температуре (%)
 const float HUM_MAX           = 85.0;  // Критическая сырость (%)
@@ -854,6 +862,11 @@ float currentHum   = 45.0;
 int currentZone    = 0;
 bool dhtError      = false;
 bool currentDanger = false;
+
+// Переменные для Safe_Zone (таймер отдыха и статус эвакуации)
+bool isEvacuated             = false;
+unsigned long safeZoneEnterTime = 0;
+unsigned long restSeconds       = 0;
 
 unsigned long lastDhtTime      = 0;
 unsigned long lastBleTime      = 0;
@@ -943,6 +956,22 @@ void loop() {
     scanBeacons();
   }
 
+  // Логика Safe_Zone: перекличка (эвакуация) и таймер отдыха
+  if (currentZone == 3) {
+    if (!isEvacuated) {
+      isEvacuated = true;
+      safeZoneEnterTime = now;
+      Serial.println("Roll Call: Miner_01 entered SAFE ZONE (Evacuated).");
+    }
+    restSeconds = (now - safeZoneEnterTime) / 1000;
+  } else {
+    if (isEvacuated) {
+      Serial.println("Miner_01 left SAFE ZONE. Rest duration: " + String(restSeconds) + "s");
+    }
+    isEvacuated = false;
+    restSeconds = 0;
+  }
+
   // 4. Проверка угроз и световая индикация на плате
   bool dangerGas       = (!isWarmingUp) &amp;&amp; (currentGas &gt;= gasThreshold);
   bool dangerTemp      = !dhtError &amp;&amp; (currentTemp &gt;= TEMP_MAX);
@@ -950,7 +979,12 @@ void loop() {
   bool dangerHumHigh   = !dhtError &amp;&amp; (currentHum &gt;= HUM_MAX);
   bool dangerHumLow    = !dhtError &amp;&amp; (currentHum &lt;= HUM_MIN);
 
-  currentDanger = dangerGas || dangerTemp || dangerHeatCombo || dangerHumHigh || dangerHumLow;
+  // В Safe_Zone (зона 3) все тревоги отключены
+  if (currentZone == 3) {
+    currentDanger = false;
+  } else {
+    currentDanger = dangerGas || dangerTemp || dangerHeatCombo || dangerHumHigh || dangerHumLow;
+  }
 
   if (currentDanger) {
     bool pulse = ((now / 250) % 2 == 0);
@@ -959,14 +993,27 @@ void loop() {
     digitalWrite(LED_PIN, LOW);
   }
 
-  // 5. Обновление LCD каждые 250 мс (карусель тревог раз в секунду)
+  // 5. Обновление LCD каждые 250 мс
   if (now - lastLcdTime &gt;= 250) {
     lastLcdTime = now;
 
-    // Верхняя строка: газ, температура и текущая зона (ровно 16 символов)
+    // Особый экран для Safe_Zone (убираем показатели шахты, показываем таймер отдыха)
+    if (currentZone == 3) {
+      lcd.setCursor(0, 0);
+      lcd.print("   SAFE ZONE    "); // Ровно 16 символов
+
+      unsigned long mins = restSeconds / 60;
+      unsigned long secs = restSeconds % 60;
+      char line2[17];
+      snprintf(line2, sizeof(line2), "  REST: %02lu:%02lu   ", mins, secs);
+      lcd.setCursor(0, 1);
+      lcd.print(line2);
+      return;
+    }
+
+    // Стандартный экран для зон 0, 1, 2
     char line1[17];
-    char zChar = (currentZone == 3) ? 'S' : ('0' + currentZone);
-    snprintf(line1, sizeof(line1), "G:%-4d T:%2dC Z:%c", currentGas, (int)currentTemp, zChar);
+    snprintf(line1, sizeof(line1), "G:%-4d T:%2dC Z:%d", currentGas, (int)currentTemp, currentZone);
     lcd.setCursor(0, 0);
     lcd.print(line1);
 
@@ -974,7 +1021,7 @@ void loop() {
     int alertCount = 0;
 
     if (dangerGas)       activeAlerts[alertCount++] = "ALERT: HIGH GAS!";
-    if (dangerTemp)      activeAlerts[alertCount++] = "ALERT: TEMP&gt;=26C";
+    if (dangerTemp)      activeAlerts[alertCount++] = "ALERT: TEMP&gt;=28C";
     if (dangerHeatCombo) activeAlerts[alertCount++] = "ALERT: HEAT+HUM!";
     if (dangerHumHigh)   activeAlerts[alertCount++] = "ALERT: HIGH HUM!";
     if (dangerHumLow)    activeAlerts[alertCount++] = "ALERT: DRY AIR! ";
@@ -1014,8 +1061,8 @@ void scanBeacons() {
       } else if (devName == "MINE_ZONE_2") {
         detectedZone = 2;
         bestRssi = rssi;
-      } else if (devName == "SAFE_ZONE" || devName == "SAFE" || devName == "SAFE ZONE" || devName == "MINE_SAFE_ZONE" || devName == "SAFEZONE") {
-        detectedZone = 3; // Зона 3: Камера аварийного спасения (SAFE_ZONE)
+      } else if (devName == "Safe_Zone") {
+        detectedZone = 3;
         bestRssi = rssi;
       }
     }
@@ -1046,6 +1093,8 @@ void handleData() {
   String json = "{";
   json += "\"id\":\"" + String(MINER_ID) + "\",";
   json += "\"zone\":" + String(currentZone) + ",";
+  json += "\"evacuated\":" + String(isEvacuated ? "true" : "false") + ",";
+  json += "\"rest_sec\":" + String(restSeconds) + ",";
   json += "\"gas\":" + String(currentGas) + ",";
   json += "\"temp\":" + String(currentTemp, 1) + ",";
   json += "\"hum\":" + String(currentHum, 1) + ",";
@@ -1057,17 +1106,23 @@ void handleData() {
 void handleRoot() {
   sendCorsHeaders();
   server.send(200, "text/plain", "ESP32 Mine Safety Unit Online. JSON: /data");
-}</pre>
+}
+</pre>
       </div>
     </div></div>
 
   <script>
-    // State Variables
+    // State Variables (Mirrors ESP32 Mine Safety Firmware)
     let telemetry = {
+      id: "Miner_01",
+      zone: 1,
+      evacuated: false,
+      restSec: 0,
       gas: 185,
       temp: 23.8,
       hum: 62,
-            buzzer: false,
+      hardwareDanger: false,
+      buzzer: false,
       status: "SAFE",
       timestamp: 0
     };
@@ -1076,12 +1131,21 @@ void handleRoot() {
     let isSoundMuted = false;
     let activeTab = 'dashboard';
     let currentBleZone = 1;
+    let isEvacuated = false;
+    let demoRestTicks = 0;
 
     // 60-point history buffer for canvas chart
     const historyBuffer = [];
     const maxBufferLength = 60;
     for (let i = 0; i < maxBufferLength; i++) {
       historyBuffer.push({ gas: 180 + Math.sin(i * 0.2) * 10, temp: 23.5 });
+    }
+
+    function formatRestTime(totalSec) {
+      const s = Math.max(0, Math.floor(totalSec || 0));
+      const mins = String(Math.floor(s / 60)).padStart(2, '0');
+      const secs = String(s % 60).padStart(2, '0');
+      return `${mins}:${secs}`;
     }
 
     // Switch Tab Function
@@ -1117,20 +1181,21 @@ void handleRoot() {
           clearTimeout(timeoutId);
           if (res.ok) {
             const d = await res.json();
-            telemetry.gas = d.gas !== undefined ? Number(d.gas) : (d.gas_ppm !== undefined ? Number(d.gas_ppm) : telemetry.gas);
-            telemetry.temp = d.temp !== undefined ? Number(d.temp) : (d.temp_c !== undefined ? Number(d.temp_c) : telemetry.temp);
-            telemetry.hum = d.hum !== undefined ? Number(d.hum) : (d.humidity !== undefined ? Number(d.humidity) : telemetry.hum);
-            
-            // Support ESP32 BLE Zone Tracking (0=Transit, 1=MINE_ZONE_1, 2=MINE_ZONE_2)
+            if (d.gas !== undefined) telemetry.gas = Number(d.gas);
+            else if (d.gas_ppm !== undefined) telemetry.gas = Number(d.gas_ppm);
+            if (d.temp !== undefined) telemetry.temp = Number(d.temp);
+            else if (d.temp_c !== undefined) telemetry.temp = Number(d.temp_c);
+            if (d.hum !== undefined) telemetry.hum = Number(d.hum);
+            else if (d.humidity !== undefined) telemetry.hum = Number(d.humidity);
+
+            if (d.id) telemetry.id = String(d.id);
+            if (d.evacuated !== undefined) telemetry.evacuated = Boolean(d.evacuated);
+            if (d.rest_sec !== undefined) telemetry.restSec = Number(d.rest_sec);
+            if (d.danger !== undefined) telemetry.hardwareDanger = Boolean(d.danger);
+
             if (d.zone !== undefined) {
               telemetry.zone = Number(d.zone);
               syncBleZonePosition(telemetry.zone);
-            }
-            if (d.danger !== undefined) {
-              telemetry.hardwareDanger = Boolean(d.danger);
-            }
-            if (d.id) {
-              telemetry.minerId = d.id;
             }
             isLiveHardware = true;
           } else {
@@ -1141,18 +1206,31 @@ void handleRoot() {
         }
       }
 
-      // Small natural sensor fluctuation if not connected to live hardware and not manually dragged
-      if (!isLiveHardware && !isManualOverride) {
-        telemetry.gas += (Math.random() - 0.49) * 4;
-        if (telemetry.gas < 60) telemetry.gas = 60;
-        telemetry.temp += (Math.random() - 0.5) * 0.1;
+      // Small natural sensor fluctuation & demo timer in offline simulation mode
+      if (!isLiveHardware) {
+        if (!isManualOverride) {
+          telemetry.gas += (Math.random() - 0.49) * 4;
+          if (telemetry.gas < 60) telemetry.gas = 60;
+          telemetry.temp += (Math.random() - 0.5) * 0.1;
+        }
+        if (currentBleZone === 3 || isEvacuated) {
+          demoRestTicks += 0.5;
+          telemetry.evacuated = true;
+          telemetry.restSec = Math.floor(demoRestTicks);
+        } else {
+          demoRestTicks = 0;
+          telemetry.evacuated = false;
+          telemetry.restSec = 0;
+        }
       }
+
+      const inSafeZone = (isLiveHardware ? (telemetry.zone === 3 || telemetry.evacuated) : (currentBleZone === 3 || isEvacuated));
 
       // Update Live Hardware Connection Badge
       const liveBadge = document.getElementById('badge-connection');
       if (liveBadge) {
         if (isLiveHardware) {
-          liveBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> MineSafety_01 Live (192.168.4.1)';
+          liveBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> ${telemetry.id} Live (192.168.4.1)`;
           liveBadge.className = 'text-xs font-mono-tech px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5';
         } else {
           liveBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span> Демо-симулятор';
@@ -1160,124 +1238,155 @@ void handleRoot() {
         }
       }
 
-      // Check Hazard Thresholds (Gas > 1000 ppm, Temp > 28 C, Hum > 75%)
-      const isGasDanger = telemetry.gas > 1000;
-      const isGasWarning = telemetry.gas > 500;
-      const isTempDanger = telemetry.temp > 28;
-      const isHumDanger = telemetry.hum > 75;
-      
-      const isCritical = isGasDanger || isTempDanger || isHumDanger;
+      // Thresholds matching ESP32 firmware:
+      // TEMP_MAX >= 28.0, HEAT_STRESS >= 24.0 & Hum >= 75.0, HUM_MAX >= 85.0, HUM_MIN <= 15.0
+      const isTempDanger = telemetry.temp >= 28.0;
+      const isHeatCombo  = telemetry.temp >= 24.0 && telemetry.hum >= 75.0;
+      const isHumHigh    = telemetry.hum >= 85.0;
+      const isHumLow     = telemetry.hum <= 15.0;
+      const isDemoGasDanger = !isLiveHardware && telemetry.gas > 1000;
+      const isLiveGasDanger = isLiveHardware && telemetry.hardwareDanger && !isTempDanger && !isHeatCombo && !isHumHigh && !isHumLow;
+      const isGasDanger = isDemoGasDanger || isLiveGasDanger;
+      const isGasWarning = !isLiveHardware && telemetry.gas > 500 && !isGasDanger;
+
+      // In Safe_Zone (zone 3), ESP32 disables all alarms
+      let isCritical = false;
+      if (inSafeZone) {
+        isCritical = false;
+      } else if (isLiveHardware) {
+        isCritical = telemetry.hardwareDanger;
+      } else {
+        isCritical = isGasDanger || isTempDanger || isHeatCombo || isHumHigh || isHumLow;
+      }
       telemetry.buzzer = isCritical;
 
-      // Update Status Badge
+      // Update Status Badge & Alarm Banner
       const statusBadge = document.getElementById('badge-status');
       const alarmBanner = document.getElementById('alarm-banner');
       const alarmText = document.getElementById('alarm-text');
+      const evacPath1 = document.getElementById('svg-evac-path');
+      const evacPath2 = document.getElementById('svg-evac-path2');
+      const evacLabel = document.getElementById('svg-evac-label');
+      const evacBanner = document.getElementById('zone-evac-banner');
 
-      if (isCritical) {
+      if (inSafeZone) {
+        telemetry.status = "SAFE_ZONE";
+        if (statusBadge) {
+          statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> В Укрытии (Safe)';
+          statusBadge.className = "text-base font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5";
+        }
+        if (alarmBanner) alarmBanner.classList.add('hidden');
+        if (evacPath1) evacPath1.classList.add('hidden');
+        if (evacPath2) evacPath2.classList.add('hidden');
+        if (evacLabel) evacLabel.classList.add('hidden');
+        if (evacBanner) evacBanner.classList.add('hidden');
+      } else if (isCritical) {
         telemetry.status = "CRITICAL";
-        statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> ОПАСНОСТЬ!';
-        statusBadge.className = "text-base font-bold text-rose-500 flex items-center gap-1.5 mt-0.5";
-        alarmBanner.classList.remove('hidden');
+        if (statusBadge) {
+          statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span> ОПАСНОСТЬ!';
+          statusBadge.className = "text-base font-bold text-rose-500 flex items-center gap-1.5 mt-0.5";
+        }
+        if (alarmBanner) alarmBanner.classList.remove('hidden');
 
         let alertMsgs = [];
-        if (isGasDanger) alertMsgs.push("ГАЗ > 1000 PPM");
-        if (isTempDanger) alertMsgs.push("ТЕМП > 28°C");
-        if (isHumDanger) alertMsgs.push("ВЛАЖНОСТЬ > 75%");
-        alarmText.innerText = "ТРЕВОГА: " + alertMsgs.join(" | ") + "!";
+        if (isGasDanger) alertMsgs.push("ВЫСОКИЙ ГАЗ (MQ-135)");
+        if (isTempDanger) alertMsgs.push("ТЕМП >= 28°C");
+        if (isHeatCombo) alertMsgs.push("ТЕПЛОВОЙ СТРЕСС (T>=24°C, H>=75%)");
+        if (isHumHigh) alertMsgs.push("СЫРОСТЬ >= 85%");
+        if (isHumLow) alertMsgs.push("СУХОЙ ВОЗДУХ <= 15%");
+        if (alertMsgs.length === 0) alertMsgs.push("ТРЕВОГА ДАТЧИКА ESP32");
+        if (alarmText) alarmText.innerText = "ТРЕВОГА: " + alertMsgs.join(" | ") + "!";
 
         playAlarmTone();
 
-        // Zone 1 Hazard Visuals
+        // Highlight active hazard zone on SVG map and show evacuation route to Safe_Zone
         const z1Box = document.getElementById('svg-zone1-box');
-        const z1Title = document.getElementById('svg-zone1-title');
-        const z1Status = document.getElementById('svg-zone1-status-text');
-        const dashZ1Badge = document.getElementById('dash-zone1-badge');
-        const dashZ1Card = document.getElementById('dash-card-zone1');
-        const evacPath = document.getElementById('svg-evac-path');
-        const evacLabel = document.getElementById('svg-evac-label');
-        const evacBanner = document.getElementById('zone-evac-banner');
-
-        if (z1Box) {
+        const z2Box = document.getElementById('svg-zone2-box');
+        if (currentBleZone === 1 && z1Box) {
           z1Box.setAttribute('fill', '#450a0a');
           z1Box.setAttribute('stroke', '#ef4444');
-          z1Box.setAttribute('filter', 'url(#glowRed)');
+        } else if (currentBleZone === 2 && z2Box) {
+          z2Box.setAttribute('fill', '#450a0a');
+          z2Box.setAttribute('stroke', '#ef4444');
         }
-        if (z1Title) z1Title.setAttribute('fill', '#f87171');
-        if (z1Status) {
-          z1Status.setAttribute('fill', '#fca5a5');
-          z1Status.textContent = "🚨 ОПАСНОСТЬ: АВАРИЯ!";
-        }
-        if (dashZ1Badge) {
-          dashZ1Badge.className = 'text-[10px] font-mono-tech px-2 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse';
-          dashZ1Badge.innerText = 'ОПАСНОСТЬ';
-        }
-        if (dashZ1Card) {
-          dashZ1Card.className = 'bg-rose-950/40 p-3.5 rounded-xl border border-rose-500/50 flex flex-col justify-between space-y-2 transition-all shadow-lg shadow-rose-900/30';
-        }
-        if (evacPath) evacPath.classList.remove('hidden');
+        if (evacPath1) evacPath1.classList.remove('hidden');
+        if (evacPath2) evacPath2.classList.remove('hidden');
         if (evacLabel) evacLabel.classList.remove('hidden');
         if (evacBanner) evacBanner.classList.remove('hidden');
       } else if (isGasWarning) {
         telemetry.status = "WARNING";
-        statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span> Внимание';
-        statusBadge.className = "text-base font-bold text-amber-400 flex items-center gap-1.5 mt-0.5";
-        alarmBanner.classList.add('hidden');
+        if (statusBadge) {
+          statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-amber-400"></span> Внимание';
+          statusBadge.className = "text-base font-bold text-amber-400 flex items-center gap-1.5 mt-0.5";
+        }
+        if (alarmBanner) alarmBanner.classList.add('hidden');
       } else {
         telemetry.status = "SAFE";
-        statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Норма';
-        statusBadge.className = "text-base font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5";
-        alarmBanner.classList.add('hidden');
-
-        // Zone 1 Safe Visuals
+        if (statusBadge) {
+          statusBadge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Норма';
+          statusBadge.className = "text-base font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5";
+        }
+        if (alarmBanner) alarmBanner.classList.add('hidden');
         const z1Box = document.getElementById('svg-zone1-box');
-        const z1Title = document.getElementById('svg-zone1-title');
-        const z1Status = document.getElementById('svg-zone1-status-text');
-        const dashZ1Badge = document.getElementById('dash-zone1-badge');
-        const dashZ1Card = document.getElementById('dash-card-zone1');
-        const evacPath = document.getElementById('svg-evac-path');
-        const evacLabel = document.getElementById('svg-evac-label');
-        const evacBanner = document.getElementById('zone-evac-banner');
-
-        if (z1Box) {
-          z1Box.setAttribute('fill', '#06251b');
-          z1Box.setAttribute('stroke', '#10b981');
-          z1Box.removeAttribute('filter');
-        }
-        if (z1Title) z1Title.setAttribute('fill', '#34d399');
-        if (z1Status) {
-          z1Status.setAttribute('fill', '#94a3b8');
-          z1Status.textContent = "Пост датчиков ESP32 DevKit";
-        }
-        if (dashZ1Badge) {
-          dashZ1Badge.className = 'text-[10px] font-mono-tech px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-          dashZ1Badge.innerText = 'В норме';
-        }
-        if (dashZ1Card) {
-          dashZ1Card.className = 'bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between space-y-2 transition-all';
-        }
-        if (!isEvacuated) {
-          if (evacPath) evacPath.classList.add('hidden');
-          if (evacLabel) evacLabel.classList.add('hidden');
-          if (evacBanner) evacBanner.classList.add('hidden');
-        }
+        const z2Box = document.getElementById('svg-zone2-box');
+        if (z1Box) z1Box.setAttribute('fill', '#181507');
+        if (z2Box) z2Box.setAttribute('fill', '#041b25');
+        if (evacPath1) evacPath1.classList.add('hidden');
+        if (evacPath2) evacPath2.classList.add('hidden');
+        if (evacLabel) evacLabel.classList.add('hidden');
+        if (evacBanner) evacBanner.classList.add('hidden');
       }
 
-      // Sync SVG and Dashboard Zone 1 Real-Time Text
-      const svgZ1Gas = document.getElementById('svg-zone1-gas');
-      const svgZ1Temp = document.getElementById('svg-zone1-temp');
-      const svgZ1Hum = document.getElementById('svg-zone1-hum');
-      const dashZ1Gas = document.getElementById('dash-zone1-gas');
-      const dashZ1Temp = document.getElementById('dash-zone1-temp');
+      // Sync Roll Call & Rest Timer across Dashboard & Zones Map
+      const restFormatted = formatRestTime(telemetry.restSec);
+      const dashRollBadge = document.getElementById('dash-rollcall-badge');
+      const dashRestTimer = document.getElementById('dash-rest-timer');
+      const svgChamberTimer = document.getElementById('svg-chamber-timer');
+      const mEvacText = document.getElementById('mcard-evacuated-text');
+      const mRestText = document.getElementById('mcard-rest-text');
 
+      if (inSafeZone) {
+        if (dashRollBadge) {
+          dashRollBadge.innerText = "🛡️ ПЕРЕКЛИЧКА: В Укрытии";
+          dashRollBadge.className = "text-emerald-400 font-bold";
+        }
+        if (dashRestTimer) {
+          dashRestTimer.innerText = "REST: " + restFormatted;
+          dashRestTimer.classList.remove('hidden');
+        }
+        if (svgChamberTimer) svgChamberTimer.textContent = `✅ В укрытии • REST: ${restFormatted}`;
+        if (mEvacText) {
+          mEvacText.innerText = "✅ Да (Safe_Zone перекличка)";
+          mEvacText.className = "text-emerald-400 font-bold";
+        }
+        if (mRestText) mRestText.innerText = restFormatted;
+      } else {
+        if (dashRollBadge) {
+          dashRollBadge.innerText = currentBleZone === 0 ? "🚶 В переходе (Z:0)" : "⚒️ В рабочей выработке";
+          dashRollBadge.className = "text-slate-400";
+        }
+        if (dashRestTimer) dashRestTimer.classList.add('hidden');
+        if (svgChamberTimer) svgChamberTimer.textContent = "Перекличка • Ожидание";
+        if (mEvacText) {
+          mEvacText.innerText = "Нет (В выработке)";
+          mEvacText.className = "text-slate-300 font-bold";
+        }
+        if (mRestText) mRestText.innerText = "00:00";
+      }
+
+      // Sync Zones Tab ESP32 card telemetry
       const mGas = document.getElementById('mcard-gas-text');
       const mClim = document.getElementById('mcard-climate-text');
       const mSafe = document.getElementById('mcard-safety-text');
+      const unitLabel = isLiveHardware ? ' (ADC)' : ' ppm';
 
-      if (mGas) mGas.textContent = Math.round(telemetry.gas) + ' ppm' + (isGasDanger ? ' (ОПАСНОСТЬ!)' : '');
+      if (mGas) mGas.textContent = Math.round(telemetry.gas) + unitLabel + (isGasDanger && !inSafeZone ? ' (ОПАСНОСТЬ!)' : '');
       if (mClim) mClim.textContent = telemetry.temp.toFixed(1) + ' °C / ' + Math.round(telemetry.hum) + ' %';
-      if (mSafe && !isEvacuated) {
-        if (isCritical) {
+      if (mSafe) {
+        if (inSafeZone) {
+          mSafe.textContent = "🛡️ В Safe_Zone (Тревоги отключены)";
+          mSafe.className = "text-emerald-400 font-bold";
+        } else if (isCritical) {
           mSafe.textContent = "🚨 ТРЕВОГА! КРИТИЧЕСКИЙ УРОВЕНЬ";
           mSafe.className = "text-rose-400 font-bold animate-pulse";
         } else {
@@ -1288,60 +1397,83 @@ void handleRoot() {
 
       // Update Buzzer Badge
       const badgeBuzzer = document.getElementById('badge-buzzer');
-      if (telemetry.buzzer) {
-        badgeBuzzer.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span> АКТИВЕН (85 dB)';
-        badgeBuzzer.className = "text-base font-bold text-rose-400 flex items-center gap-1.5 mt-0.5";
-      } else {
-        badgeBuzzer.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-500"></span> Безмолвный';
-        badgeBuzzer.className = "text-base font-bold text-slate-400 flex items-center gap-1.5 mt-0.5";
+      if (badgeBuzzer) {
+        if (telemetry.buzzer) {
+          badgeBuzzer.innerHTML = '<span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span> АКТИВЕН (Сирена)';
+          badgeBuzzer.className = "text-base font-bold text-rose-400 flex items-center gap-1.5 mt-0.5";
+        } else {
+          badgeBuzzer.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-500"></span> Безмолвный';
+          badgeBuzzer.className = "text-base font-bold text-slate-400 flex items-center gap-1.5 mt-0.5";
+        }
       }
 
-      // Update UI Values
+      // Update UI Sensor Values
       document.getElementById('val-gas').innerText = Math.round(telemetry.gas);
       document.getElementById('val-temp').innerText = telemetry.temp.toFixed(1);
       document.getElementById('val-hum').innerText = Math.round(telemetry.hum);
 
-      // Gas Gauge Ring (314 is full stroke)
-      const gasOffset = 314 - Math.min(314, (telemetry.gas / 1500) * 314);
+      // Gas Gauge Ring (Scale dynamically for raw 12-bit ADC when > 1500)
+      const gasScaleMax = (telemetry.gas > 1500 || isLiveHardware) ? 4095 : 1500;
+      const gasOffset = 314 - Math.min(314, (telemetry.gas / gasScaleMax) * 314);
       const gasRing = document.getElementById('gas-ring');
-      gasRing.setAttribute('stroke-dashoffset', gasOffset);
-      if (isGasDanger) {
-        gasRing.setAttribute('stroke', '#ef4444');
-        document.getElementById('gas-status-text').className = "text-xs font-semibold text-rose-400 mt-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20";
-        document.getElementById('gas-status-text').innerText = "ОПАСНАЯ КОНЦЕНТРАЦИЯ (> 1000 PPM)";
-      } else if (isGasWarning) {
-        gasRing.setAttribute('stroke', '#f59e0b');
-        document.getElementById('gas-status-text').className = "text-xs font-semibold text-amber-400 mt-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20";
-        document.getElementById('gas-status-text').innerText = "Повышенный уровень (500-1000 PPM)";
-      } else {
-        gasRing.setAttribute('stroke', '#10b981');
-        document.getElementById('gas-status-text').className = "text-xs font-semibold text-emerald-400 mt-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20";
-        document.getElementById('gas-status-text').innerText = "Безопасная концентрация (< 500 PPM)";
+      const gasStatusText = document.getElementById('gas-status-text');
+      if (gasRing) gasRing.setAttribute('stroke-dashoffset', gasOffset);
+      if (gasRing && gasStatusText) {
+        if (isGasDanger && !inSafeZone) {
+          gasRing.setAttribute('stroke', '#ef4444');
+          gasStatusText.className = "text-xs font-semibold text-rose-400 mt-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20";
+          gasStatusText.innerText = "ОПАСНЫЙ СКАЧОК ГАЗА!";
+        } else if (isGasWarning && !inSafeZone) {
+          gasRing.setAttribute('stroke', '#f59e0b');
+          gasStatusText.className = "text-xs font-semibold text-amber-400 mt-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20";
+          gasStatusText.innerText = "Повышенный уровень (500-1000)";
+        } else {
+          gasRing.setAttribute('stroke', '#10b981');
+          gasStatusText.className = "text-xs font-semibold text-emerald-400 mt-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20";
+          gasStatusText.innerText = isLiveHardware ? "Калибровка / Норма (ADC)" : "Безопасная концентрация (< 500)";
+        }
       }
 
-      // Temp bar
+      // Temp & Humidity Progress Bars
       const tempPct = Math.min(100, Math.max(0, ((telemetry.temp - 10) / 45) * 100));
-      document.getElementById('bar-temp').style.width = tempPct + '%';
+      const humPct = Math.min(100, Math.max(0, telemetry.hum));
+      const barTemp = document.getElementById('bar-temp');
+      const barHum = document.getElementById('bar-hum');
+      if (barTemp) barTemp.style.width = tempPct + '%';
+      if (barHum) barHum.style.width = humPct + '%';
 
-      // Update On-Device LCD 1602 Simulation
-      let lcdGasStatus = isGasDanger ? "DANG" : (isGasWarning ? "WARN" : "NORM");
-      let lcdRow0 = `GAS:${Math.round(telemetry.gas)}ppm ${lcdGasStatus}`;
-      let lcdRow1 = `T:${telemetry.temp.toFixed(1)}C H:${Math.round(telemetry.hum)}% OK`;
+      // Update On-Device LCD 1602 Simulation (Matches real ESP32 loop exactly!)
+      let lcdRow0 = "";
+      let lcdRow1 = "";
+      const activeZone = isLiveHardware ? telemetry.zone : currentBleZone;
+
+      if (inSafeZone) {
+        lcdRow0 = "   SAFE ZONE    ";
+        lcdRow1 = `  REST: ${restFormatted}   `;
+      } else {
+        lcdRow0 = `G:${String(Math.round(telemetry.gas)).padEnd(4, ' ')} T:${String(Math.floor(telemetry.temp)).padStart(2, ' ')}C Z:${activeZone}`;
+        if (isGasDanger) lcdRow1 = "ALERT: HIGH GAS!";
+        else if (isTempDanger) lcdRow1 = "ALERT: TEMP>=28C";
+        else if (isHeatCombo) lcdRow1 = "ALERT: HEAT+HUM!";
+        else if (isHumHigh) lcdRow1 = "ALERT: HIGH HUM!";
+        else if (isHumLow) lcdRow1 = "ALERT: DRY AIR! ";
+        else lcdRow1 = `STATUS:OK  H:${String(Math.round(telemetry.hum)).padStart(2, ' ')}%`;
+      }
       document.getElementById('lcd-row-0').innerText = lcdRow0.padEnd(16, ' ').slice(0, 16);
       document.getElementById('lcd-row-1').innerText = lcdRow1.padEnd(16, ' ').slice(0, 16);
 
       // Push to History Buffer and Draw Graph
       historyBuffer.push({ gas: telemetry.gas, temp: telemetry.temp });
       if (historyBuffer.length > maxBufferLength) historyBuffer.shift();
-      drawTelemetryGraph();
+      drawTelemetryGraph(gasScaleMax);
 
-      // JSON preview
-      const jsonStr = `{"gas":${Math.round(telemetry.gas)},"temp":${telemetry.temp.toFixed(1)},"hum":${Math.round(telemetry.hum)},"buzzer":${telemetry.buzzer ? 1 : 0}}`;
+      // Exact JSON preview matching ESP32 /data
+      const jsonStr = `{"id":"${telemetry.id}","zone":${activeZone},"evacuated":${inSafeZone},"rest_sec":${telemetry.restSec},"gas":${Math.round(telemetry.gas)},"temp":${telemetry.temp.toFixed(1)},"hum":${telemetry.hum.toFixed(1)},"danger":${isCritical}}`;
       document.getElementById('json-preview').innerText = "JSON: " + jsonStr;
     }
 
     // Canvas Telemetry Graph Renderer
-    function drawTelemetryGraph() {
+    function drawTelemetryGraph(gasMax = 1500) {
       const canvas = document.getElementById('telemetryCanvas');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
@@ -1366,7 +1498,7 @@ void handleRoot() {
       ctx.beginPath();
       for (let i = 0; i < historyBuffer.length; i++) {
         const x = (i / (maxBufferLength - 1)) * w;
-        const normGas = Math.min(1, historyBuffer[i].gas / 1000);
+        const normGas = Math.min(1, historyBuffer[i].gas / (gasMax || 1500));
         const y = h - (normGas * (h - 20) + 10);
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
@@ -1387,7 +1519,7 @@ void handleRoot() {
       ctx.stroke();
     }
 
-    // Web Audio Synthesizer for Buzzer Siren
+        // Web Audio Synthesizer for Buzzer Siren
     function playAlarmTone() {
       if (isSoundMuted) return;
       try {
@@ -1477,25 +1609,21 @@ void handleRoot() {
     setInterval(tick, 500);
 
 // ==========================================
-    // MINE HORIZON 2-ZONES & SINGLE MINE SAFETY ESP32 ENGINE
+    // MINE HORIZON ZONES & SINGLE MINE SAFETY ESP32 ENGINE
     // ==========================================
-    let isEvacuated = false;
-    currentBleZone = 1; // 0 = Transit, 1 = MINE_ZONE_1, 2 = MINE_ZONE_2
-
-    // Sync Mine Safety ESP32 position according to real BLE scan from ESP32
     function syncBleZonePosition(zoneNum) {
       currentBleZone = Number(zoneNum);
-      if (isEvacuated) return; // Keep in refuge chamber if emergency evacuation active
+      if (isEvacuated && currentBleZone !== 3) return; // Manual evacuation override in demo
 
       const token = document.getElementById('svg-token-miner');
       const dashLoc = document.getElementById('dash-miner-location');
       const mcardZoneText = document.getElementById('mcard-zone-text');
       const mcardBeaconText = document.getElementById('mcard-beacon-text');
-      const mcardSafetyText = document.getElementById('mcard-safety-text');
 
       const z1Box = document.getElementById('svg-zone1-box');
       const z2Box = document.getElementById('svg-zone2-box');
       const z0Box = document.getElementById('svg-zone0-box');
+      const chBox = document.getElementById('svg-chamber-box');
 
       const dashZ1Badge = document.getElementById('dash-zone1-badge');
       const dashZ2Badge = document.getElementById('dash-zone2-badge');
@@ -1503,16 +1631,15 @@ void handleRoot() {
       const dashZ2Status = document.getElementById('dash-zone2-status');
 
       if (zoneNum === 1) {
-        // Position at Zone 1 (Phone 1)
         if (token) token.setAttribute('transform', 'translate(260, 360)');
         if (dashLoc) dashLoc.innerHTML = '<span class="text-amber-400">Зона 1: Штрек №1 (Тел. 1)</span>';
         if (mcardZoneText) mcardZoneText.innerText = "Зона 1: Штрек №1 (Телефон 1)";
         if (mcardBeaconText) mcardBeaconText.innerText = "MINE_ZONE_1 (RSSI > -80)";
 
         if (z1Box) { z1Box.setAttribute('stroke', '#f59e0b'); z1Box.setAttribute('stroke-width', '3'); }
-        const chBox1 = document.getElementById('svg-chamber-box'); if (chBox1) { chBox1.setAttribute('stroke', '#38bdf8'); chBox1.setAttribute('stroke-width', '2'); }
         if (z2Box) { z2Box.setAttribute('stroke', '#334155'); z2Box.setAttribute('stroke-width', '1.5'); }
         if (z0Box) { z0Box.setAttribute('stroke', '#334155'); }
+        if (chBox) { chBox.setAttribute('stroke', '#38bdf8'); chBox.setAttribute('stroke-width', '2'); }
 
         if (dashZ1Badge) { dashZ1Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold"; dashZ1Badge.innerText = "ESP32 В ЗОНЕ"; }
         if (dashZ2Badge) { dashZ2Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700"; dashZ2Badge.innerText = "Вне зоны"; }
@@ -1520,7 +1647,6 @@ void handleRoot() {
         if (dashZ2Status) dashZ2Status.innerText = "Вне зоны";
 
       } else if (zoneNum === 2) {
-        // Position at Zone 2 (Phone 2)
         if (token) token.setAttribute('transform', 'translate(700, 360)');
         if (dashLoc) dashLoc.innerHTML = '<span class="text-cyan-400">Зона 2: Вентштрек (Тел. 2)</span>';
         if (mcardZoneText) mcardZoneText.innerText = "Зона 2: Вентштрек (Телефон 2)";
@@ -1529,7 +1655,6 @@ void handleRoot() {
         if (z1Box) { z1Box.setAttribute('stroke', '#334155'); z1Box.setAttribute('stroke-width', '1.5'); }
         if (z2Box) { z2Box.setAttribute('stroke', '#06b6d4'); z2Box.setAttribute('stroke-width', '3'); }
         if (z0Box) { z0Box.setAttribute('stroke', '#334155'); }
-        const chBox = document.getElementById('svg-chamber-box');
         if (chBox) { chBox.setAttribute('stroke', '#38bdf8'); chBox.setAttribute('stroke-width', '2'); }
 
         if (dashZ1Badge) { dashZ1Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700"; dashZ1Badge.innerText = "Вне зоны"; }
@@ -1538,20 +1663,15 @@ void handleRoot() {
         if (dashZ2Status) dashZ2Status.innerText = "Активен (Рядом с Тел. 2)";
 
       } else if (zoneNum === 3) {
-        // Position at Safe Zone / Refuge Chamber (SAFE_ZONE beacon)
-        if (token) token.setAttribute('transform', 'translate(480, 428)');
-        if (dashLoc) dashLoc.innerHTML = '<span class="text-emerald-400 font-bold">🛡️ В КАМЕРЕ СПАСЕНИЯ (Маяк SAFE_ZONE)</span>';
-        if (mcardZoneText) mcardZoneText.innerText = "Камера аварийного спасения (SAFE_ZONE)";
-        if (mcardBeaconText) mcardBeaconText.innerText = "SAFE_ZONE (RSSI > -80)";
-        if (mcardSafetyText) {
-          mcardSafetyText.innerText = "🛡️ В безопасном укрытии (OK)";
-          mcardSafetyText.className = "text-emerald-400 font-bold";
-        }
+        // Place token neatly inside right side of Safe_Zone chamber without overlapping left labels
+        if (token) token.setAttribute('transform', 'translate(572, 434)');
+        if (dashLoc) dashLoc.innerHTML = '<span class="text-emerald-400 font-bold">🛡️ В КАМЕРЕ СПАСЕНИЯ (Маяк Safe_Zone)</span>';
+        if (mcardZoneText) mcardZoneText.innerText = "Камера аварийного спасения (Safe_Zone)";
+        if (mcardBeaconText) mcardBeaconText.innerText = "Safe_Zone (RSSI > -80)";
 
         if (z1Box) { z1Box.setAttribute('stroke', '#334155'); z1Box.setAttribute('stroke-width', '1.5'); }
         if (z2Box) { z2Box.setAttribute('stroke', '#334155'); z2Box.setAttribute('stroke-width', '1.5'); }
         if (z0Box) { z0Box.setAttribute('stroke', '#334155'); }
-        const chBox = document.getElementById('svg-chamber-box');
         if (chBox) { chBox.setAttribute('stroke', '#10b981'); chBox.setAttribute('stroke-width', '3'); }
 
         if (dashZ1Badge) { dashZ1Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700"; dashZ1Badge.innerText = "Вне зоны"; }
@@ -1560,7 +1680,6 @@ void handleRoot() {
         if (dashZ2Status) dashZ2Status.innerText = "Вне зоны";
 
       } else {
-        // Transit Zone (Between Phones / Z:0)
         if (token) token.setAttribute('transform', 'translate(480, 360)');
         if (dashLoc) dashLoc.innerHTML = '<span class="text-slate-300">В переходе между телефонами (Z:0)</span>';
         if (mcardZoneText) mcardZoneText.innerText = "Сбойка: Переход между телефонами (Z:0)";
@@ -1569,6 +1688,7 @@ void handleRoot() {
         if (z1Box) { z1Box.setAttribute('stroke', '#334155'); z1Box.setAttribute('stroke-width', '1.5'); }
         if (z2Box) { z2Box.setAttribute('stroke', '#334155'); z2Box.setAttribute('stroke-width', '1.5'); }
         if (z0Box) { z0Box.setAttribute('stroke', '#38bdf8'); }
+        if (chBox) { chBox.setAttribute('stroke', '#38bdf8'); chBox.setAttribute('stroke-width', '2'); }
 
         if (dashZ1Badge) { dashZ1Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700"; dashZ1Badge.innerText = "Вне зоны"; }
         if (dashZ2Badge) { dashZ2Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700"; dashZ2Badge.innerText = "Вне зоны"; }
@@ -1577,9 +1697,11 @@ void handleRoot() {
       }
     }
 
-    // Manual / Demo zone simulator button
     function simulateBleZone(z) {
+      isEvacuated = (z === 3);
+      if (z !== 3) demoRestTicks = 0;
       syncBleZonePosition(z);
+      tick();
     }
 
     function selectZone(zKey) {
@@ -1589,7 +1711,6 @@ void handleRoot() {
       else if (zKey === 'chamber') toggleEvacuation();
     }
 
-    // Emergency Evacuation Trigger
     function toggleEvacuation() {
       isEvacuated = !isEvacuated;
       updateEvacuationVisuals();
@@ -1597,50 +1718,21 @@ void handleRoot() {
 
     function returnMinersToWork() {
       isEvacuated = false;
+      if (currentBleZone === 3) currentBleZone = 1;
       updateEvacuationVisuals();
     }
 
     function updateEvacuationVisuals() {
-      const token = document.getElementById('svg-token-miner');
-      const evacPath1 = document.getElementById('svg-evac-path');
-      const evacPath2 = document.getElementById('svg-evac-path2');
-      const evacLabel = document.getElementById('svg-evac-label');
-      const evacBanner = document.getElementById('zone-evac-banner');
       const btnEvacText = document.getElementById('btn-evac-text');
-
-      const dashLoc = document.getElementById('dash-miner-location');
-      const mcardZoneText = document.getElementById('mcard-zone-text');
-      const mcardSafetyText = document.getElementById('mcard-safety-text');
-
       if (isEvacuated) {
-        // Move single ESP32 token into Refuge Chamber
-        if (token) token.setAttribute('transform', 'translate(480, 428)');
-        if (evacPath1) evacPath1.classList.remove('hidden');
-        if (evacPath2) evacPath2.classList.remove('hidden');
-        if (evacLabel) evacLabel.classList.remove('hidden');
-        if (evacBanner) evacBanner.classList.remove('hidden');
         if (btnEvacText) btnEvacText.innerText = "ВЕРНУТЬ ESP32 В ЗАБОЙ";
-
-        if (dashLoc) dashLoc.innerHTML = '<span class="text-cyan-400 font-bold">🛡️ В КАМЕРЕ СПАСЕНИЯ</span>';
-        if (mcardZoneText) mcardZoneText.innerText = "Камера спасения (Безопасное укрытие)";
-        if (mcardSafetyText) {
-          mcardSafetyText.innerText = "🛡️ В укрытии (Безопасно)";
-          mcardSafetyText.className = "text-cyan-400 font-bold";
-        }
+        syncBleZonePosition(3);
       } else {
-        // Return to current BLE zone
-        if (evacPath1) evacPath1.classList.add('hidden');
-        if (evacPath2) evacPath2.classList.add('hidden');
-        if (evacLabel) evacLabel.classList.add('hidden');
-        if (evacBanner) evacBanner.classList.add('hidden');
+        demoRestTicks = 0;
         if (btnEvacText) btnEvacText.innerText = "🚨 ЭВАКУИРОВАТЬ ESP32 В УКРЫТИЕ";
-
-        if (mcardSafetyText) {
-          mcardSafetyText.innerText = "В норме (Штатно)";
-          mcardSafetyText.className = "text-emerald-400 font-bold";
-        }
-        syncBleZonePosition(currentBleZone);
+        syncBleZonePosition(currentBleZone === 3 ? 1 : currentBleZone);
       }
+      tick();
     }
 
     function copyFirmwareCode() {

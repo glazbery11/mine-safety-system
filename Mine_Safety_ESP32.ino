@@ -24,7 +24,7 @@ WebServer server(80);
 BLEScan* pBLEScan;
 
 // 3. КРИТИЧЕСКИЕ ПОРОГИ ШАХТЫ И НАСТРОЙКИ ЗОН
-const float TEMP_MAX          = 26.0;  // Предельная температура (°C)
+const float TEMP_MAX          = 28.0;  // Предельная температура (°C)
 const float HEAT_STRESS_TEMP  = 24.0;  // Порог T для теплового стресса (°C)
 const float HEAT_STRESS_HUM   = 75.0;  // Порог H при повышенной температуре (%)
 const float HUM_MAX           = 85.0;  // Критическая сырость (%)
@@ -44,6 +44,11 @@ float currentHum   = 45.0;
 int currentZone    = 0;
 bool dhtError      = false;
 bool currentDanger = false;
+
+// Переменные для Safe_Zone (таймер отдыха и статус эвакуации)
+bool isEvacuated             = false;
+unsigned long safeZoneEnterTime = 0;
+unsigned long restSeconds       = 0;
 
 unsigned long lastDhtTime      = 0;
 unsigned long lastBleTime      = 0;
@@ -132,6 +137,22 @@ void loop() {
     scanBeacons();
   }
 
+  // Логика Safe_Zone: перекличка (эвакуация) и таймер отдыха
+  if (currentZone == 3) {
+    if (!isEvacuated) {
+      isEvacuated = true;
+      safeZoneEnterTime = now;
+      Serial.println("Roll Call: Miner_01 entered SAFE ZONE (Evacuated).");
+    }
+    restSeconds = (now - safeZoneEnterTime) / 1000;
+  } else {
+    if (isEvacuated) {
+      Serial.println("Miner_01 left SAFE ZONE. Rest duration: " + String(restSeconds) + "s");
+    }
+    isEvacuated = false;
+    restSeconds = 0;
+  }
+
   // 4. Проверка угроз и световая индикация на плате
   bool dangerGas       = (!isWarmingUp) && (currentGas >= gasThreshold);
   bool dangerTemp      = !dhtError && (currentTemp >= TEMP_MAX);
@@ -139,7 +160,12 @@ void loop() {
   bool dangerHumHigh   = !dhtError && (currentHum >= HUM_MAX);
   bool dangerHumLow    = !dhtError && (currentHum <= HUM_MIN);
 
-  currentDanger = dangerGas || dangerTemp || dangerHeatCombo || dangerHumHigh || dangerHumLow;
+  // В Safe_Zone (зона 3) все тревоги отключены
+  if (currentZone == 3) {
+    currentDanger = false;
+  } else {
+    currentDanger = dangerGas || dangerTemp || dangerHeatCombo || dangerHumHigh || dangerHumLow;
+  }
 
   if (currentDanger) {
     bool pulse = ((now / 250) % 2 == 0);
@@ -148,14 +174,27 @@ void loop() {
     digitalWrite(LED_PIN, LOW);
   }
 
-  // 5. Обновление LCD каждые 250 мс (карусель тревог раз в секунду)
+  // 5. Обновление LCD каждые 250 мс
   if (now - lastLcdTime >= 250) {
     lastLcdTime = now;
 
-    // Верхняя строка: газ, температура и текущая зона (ровно 16 символов)
+    // Особый экран для Safe_Zone (убираем показатели шахты, показываем таймер отдыха)
+    if (currentZone == 3) {
+      lcd.setCursor(0, 0);
+      lcd.print("   SAFE ZONE    "); // Ровно 16 символов
+
+      unsigned long mins = restSeconds / 60;
+      unsigned long secs = restSeconds % 60;
+      char line2[17];
+      snprintf(line2, sizeof(line2), "  REST: %02lu:%02lu   ", mins, secs);
+      lcd.setCursor(0, 1);
+      lcd.print(line2);
+      return;
+    }
+
+    // Стандартный экран для зон 0, 1, 2
     char line1[17];
-    char zChar = (currentZone == 3) ? 'S' : ('0' + currentZone);
-    snprintf(line1, sizeof(line1), "G:%-4d T:%2dC Z:%c", currentGas, (int)currentTemp, zChar);
+    snprintf(line1, sizeof(line1), "G:%-4d T:%2dC Z:%d", currentGas, (int)currentTemp, currentZone);
     lcd.setCursor(0, 0);
     lcd.print(line1);
 
@@ -163,7 +202,7 @@ void loop() {
     int alertCount = 0;
 
     if (dangerGas)       activeAlerts[alertCount++] = "ALERT: HIGH GAS!";
-    if (dangerTemp)      activeAlerts[alertCount++] = "ALERT: TEMP>=26C";
+    if (dangerTemp)      activeAlerts[alertCount++] = "ALERT: TEMP>=28C";
     if (dangerHeatCombo) activeAlerts[alertCount++] = "ALERT: HEAT+HUM!";
     if (dangerHumHigh)   activeAlerts[alertCount++] = "ALERT: HIGH HUM!";
     if (dangerHumLow)    activeAlerts[alertCount++] = "ALERT: DRY AIR! ";
@@ -203,8 +242,8 @@ void scanBeacons() {
       } else if (devName == "MINE_ZONE_2") {
         detectedZone = 2;
         bestRssi = rssi;
-      } else if (devName == "SAFE_ZONE" || devName == "SAFE" || devName == "SAFE ZONE" || devName == "MINE_SAFE_ZONE" || devName == "SAFEZONE") {
-        detectedZone = 3; // Зона 3: Камера аварийного спасения (SAFE_ZONE)
+      } else if (devName == "Safe_Zone") {
+        detectedZone = 3;
         bestRssi = rssi;
       }
     }
@@ -235,6 +274,8 @@ void handleData() {
   String json = "{";
   json += "\"id\":\"" + String(MINER_ID) + "\",";
   json += "\"zone\":" + String(currentZone) + ",";
+  json += "\"evacuated\":" + String(isEvacuated ? "true" : "false") + ",";
+  json += "\"rest_sec\":" + String(restSeconds) + ",";
   json += "\"gas\":" + String(currentGas) + ",";
   json += "\"temp\":" + String(currentTemp, 1) + ",";
   json += "\"hum\":" + String(currentHum, 1) + ",";
