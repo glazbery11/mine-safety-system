@@ -47,7 +47,7 @@ dt{color:var(--mute)}dd{margin:0}
 @media(max-width:900px){main{grid-template-columns:minmax(0,1fr)}.stage{min-height:62vh}}
 @media(max-width:600px){button{font-size:13px;padding:8px 10px}.hud{font-size:12px}.stage{min-height:0;display:flex;flex-direction:column}#c{position:relative;height:58vh}.bar{position:static;padding:10px;border-top:1px solid var(--line)}}
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<script src="three_bundle.min.js"></script>
 </head>
 <body>
 <header>
@@ -91,11 +91,31 @@ dt{color:var(--mute)}dd{margin:0}
   </section>
 </main>
 
-<script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+<script>
+(async function() {
+if (!window.THREE) {
+  try {
+    const base = 'https://cdn.jsdelivr.net/npm/three@0.170.0';
+    const [T, OC, RE, STL] = await Promise.all([
+      import(base + '/build/three.module.js'),
+      import(base + '/examples/jsm/controls/OrbitControls.js'),
+      import(base + '/examples/jsm/environments/RoomEnvironment.js'),
+      import(base + '/examples/jsm/exporters/STLExporter.js')
+    ]);
+    window.THREE = T;
+    window.OrbitControls = OC.OrbitControls;
+    window.RoomEnvironment = RE.RoomEnvironment;
+    window.STLExporter = STL.STLExporter;
+  } catch (e) {
+    const errEl = document.getElementById('err');
+    if (errEl) errEl.style.display = 'flex';
+    return;
+  }
+}
+const THREE = window.THREE;
+const OrbitControls = window.OrbitControls;
+const RoomEnvironment = window.RoomEnvironment;
+const STLExporter = window.STLExporter;
 {
 // ===================== dimensions (mm) — same as mine_safety_enclosure.scad
 const L=170, W=100, RP=32, WALL=4, ZIP=5;
@@ -414,7 +434,7 @@ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 $('bOpen').addEventListener('click',e=>{lidTarget=lidTarget?0:1;e.currentTarget.setAttribute('aria-pressed',!!lidTarget);e.currentTarget.textContent=lidTarget?'Закрыть чехол':'Открыть чехол';if(lidTarget&&cam==='iso')go('open');});
 const cams={iso:[V(205,170,255),V(0,-6,0)],front:[V(0,35,375),V(0,-8,0)],top:[V(0,390,30),V(0,0,0)],side:[V(380,45,40),V(0,-8,0)],open:[V(175,265,265),V(0,8,-25)]};
 let cam='iso',camAnim=null;
-const fitPos=k=>{const [p,q]=cams[k],f=Math.max(1,1.3/camera.aspect);return p.clone().sub(q).multiplyScalar(f).add(q);};
+const fitPos=k=>{const [p,q]=cams[k],asp=(Number.isFinite(camera.aspect)&&camera.aspect>0)?camera.aspect:1.5,f=Math.max(1,1.3/asp);return p.clone().sub(q).multiplyScalar(f).add(q);};
 function go(k){cam=k;document.querySelectorAll('[data-cam]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.cam===k));
   camAnim={t:0,p0:camera.position.clone(),q0:controls.target.clone(),p1:fitPos(k),q1:cams[k][1]};if(reduce){camAnim.t=1;}}
 document.querySelectorAll('[data-cam]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.cam)));
@@ -426,7 +446,7 @@ $('bStl').addEventListener('click',()=>{ // case only, Z-up, millimetres
   grp.rotation.x=Math.PI/2;grp.updateMatrixWorld(true);
   const data=new STLExporter().parse(grp,{binary:true});const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'model/stl'}));a.download='mine_safety_blue_case.stl';a.click();});
 
-function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+function resize(){const w=Math.max(1,canvas.clientWidth),h=Math.max(1,canvas.clientHeight);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 const ro=new ResizeObserver(resize);ro.observe(canvas);resize();
 camera.position.copy(fitPos('iso'));
 // inside the claude.ai viewer pages cannot save files: hide the STL button there (it works on GitHub Pages / locally)
@@ -448,6 +468,7 @@ renderer.setAnimationLoop(()=>{const raw=clock.getDelta(),dt=Math.min(raw,0.05);
   controls.update();renderer.render(scene,camera);placeLabels();});
 window.__viewer={go,select,setLid:v=>{lidTarget=v;lidAngle=v;pivot.rotation.x=-v*THREE.MathUtils.degToRad(105);scene.updateMatrixWorld(true);updateI2C();$('hudState').textContent=v?'Чехол открыт':'Крышка закрыта';},toggleLabels:v=>{showLabels=v;}};
 }
+})();
 </script>
 <script>setTimeout(()=>{if(!window.__viewer){const e=document.getElementById('err');if(e)e.style.display='flex';}},8000);</script>
 </body>
