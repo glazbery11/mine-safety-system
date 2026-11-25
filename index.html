@@ -392,6 +392,9 @@
             <button onclick="simulateBleZone(2)" class="text-xs px-3 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 border border-cyan-500/40 font-semibold transition">
               📱 В Зону 2 (Тел. 2)
             </button>
+            <button onclick="simulateBleZone(3)" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 font-semibold transition">
+              🛡️ В Камеру (SAFE_ZONE)
+            </button>
             <button onclick="setScenario('gas')" class="text-xs px-3 py-1.5 rounded-lg bg-rose-600/30 hover:bg-rose-600/50 text-rose-300 border border-rose-500/40 font-semibold transition">
               🚨 Газ &gt; 1000 PPM
             </button>
@@ -669,6 +672,9 @@
               <button onclick="simulateBleZone(2)" class="text-xs px-3 py-1.5 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 border border-cyan-500/40 font-semibold transition">
                 Тест: К Телефону 2
               </button>
+              <button onclick="simulateBleZone(3)" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 font-semibold transition">
+                Тест: В Камеру (SAFE_ZONE)
+              </button>
             </div>
           </div>
 
@@ -687,6 +693,11 @@
                 <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800">
                   <div class="font-bold text-cyan-400">Телефон №2 (Зона 2: Вентштрек):</div>
                   <div class="text-slate-400 mt-0.5">В настройках Bluetooth или в приложении (nRF Connect) задать имя устройства: <strong class="text-white">MINE_ZONE_2</strong></div>
+                </div>
+
+                <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800">
+                  <div class="font-bold text-emerald-400">Телефон №3 (Камера аварийного спасения):</div>
+                  <div class="text-slate-400 mt-0.5">В настройках Bluetooth или в приложении задать имя устройства: <strong class="text-white">SAFE_ZONE</strong> (или SAFE)</div>
                 </div>
 
                 <div class="p-2.5 rounded-lg bg-slate-900/50 border border-slate-800/60 text-slate-400 text-[11px]">
@@ -954,7 +965,8 @@ void loop() {
 
     // Верхняя строка: газ, температура и текущая зона (ровно 16 символов)
     char line1[17];
-    snprintf(line1, sizeof(line1), "G:%-4d T:%2dC Z:%d", currentGas, (int)currentTemp, currentZone);
+    char zChar = (currentZone == 3) ? 'S' : ('0' + currentZone);
+    snprintf(line1, sizeof(line1), "G:%-4d T:%2dC Z:%c", currentGas, (int)currentTemp, zChar);
     lcd.setCursor(0, 0);
     lcd.print(line1);
 
@@ -1001,6 +1013,9 @@ void scanBeacons() {
         bestRssi = rssi;
       } else if (devName == "MINE_ZONE_2") {
         detectedZone = 2;
+        bestRssi = rssi;
+      } else if (devName == "SAFE_ZONE" || devName == "SAFE" || devName == "SAFE ZONE" || devName == "MINE_SAFE_ZONE" || devName == "SAFEZONE") {
+        detectedZone = 3; // Зона 3: Камера аварийного спасения (SAFE_ZONE)
         bestRssi = rssi;
       }
     }
@@ -1476,6 +1491,7 @@ void handleRoot() {
       const dashLoc = document.getElementById('dash-miner-location');
       const mcardZoneText = document.getElementById('mcard-zone-text');
       const mcardBeaconText = document.getElementById('mcard-beacon-text');
+      const mcardSafetyText = document.getElementById('mcard-safety-text');
 
       const z1Box = document.getElementById('svg-zone1-box');
       const z2Box = document.getElementById('svg-zone2-box');
@@ -1494,6 +1510,7 @@ void handleRoot() {
         if (mcardBeaconText) mcardBeaconText.innerText = "MINE_ZONE_1 (RSSI > -80)";
 
         if (z1Box) { z1Box.setAttribute('stroke', '#f59e0b'); z1Box.setAttribute('stroke-width', '3'); }
+        const chBox1 = document.getElementById('svg-chamber-box'); if (chBox1) { chBox1.setAttribute('stroke', '#38bdf8'); chBox1.setAttribute('stroke-width', '2'); }
         if (z2Box) { z2Box.setAttribute('stroke', '#334155'); z2Box.setAttribute('stroke-width', '1.5'); }
         if (z0Box) { z0Box.setAttribute('stroke', '#334155'); }
 
@@ -1512,11 +1529,35 @@ void handleRoot() {
         if (z1Box) { z1Box.setAttribute('stroke', '#334155'); z1Box.setAttribute('stroke-width', '1.5'); }
         if (z2Box) { z2Box.setAttribute('stroke', '#06b6d4'); z2Box.setAttribute('stroke-width', '3'); }
         if (z0Box) { z0Box.setAttribute('stroke', '#334155'); }
+        const chBox = document.getElementById('svg-chamber-box');
+        if (chBox) { chBox.setAttribute('stroke', '#38bdf8'); chBox.setAttribute('stroke-width', '2'); }
 
         if (dashZ1Badge) { dashZ1Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700"; dashZ1Badge.innerText = "Вне зоны"; }
         if (dashZ2Badge) { dashZ2Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 font-bold"; dashZ2Badge.innerText = "ESP32 В ЗОНЕ"; }
         if (dashZ1Status) dashZ1Status.innerText = "Вне зоны";
         if (dashZ2Status) dashZ2Status.innerText = "Активен (Рядом с Тел. 2)";
+
+      } else if (zoneNum === 3) {
+        // Position at Safe Zone / Refuge Chamber (SAFE_ZONE beacon)
+        if (token) token.setAttribute('transform', 'translate(480, 428)');
+        if (dashLoc) dashLoc.innerHTML = '<span class="text-emerald-400 font-bold">🛡️ В КАМЕРЕ СПАСЕНИЯ (Маяк SAFE_ZONE)</span>';
+        if (mcardZoneText) mcardZoneText.innerText = "Камера аварийного спасения (SAFE_ZONE)";
+        if (mcardBeaconText) mcardBeaconText.innerText = "SAFE_ZONE (RSSI > -80)";
+        if (mcardSafetyText) {
+          mcardSafetyText.innerText = "🛡️ В безопасном укрытии (OK)";
+          mcardSafetyText.className = "text-emerald-400 font-bold";
+        }
+
+        if (z1Box) { z1Box.setAttribute('stroke', '#334155'); z1Box.setAttribute('stroke-width', '1.5'); }
+        if (z2Box) { z2Box.setAttribute('stroke', '#334155'); z2Box.setAttribute('stroke-width', '1.5'); }
+        if (z0Box) { z0Box.setAttribute('stroke', '#334155'); }
+        const chBox = document.getElementById('svg-chamber-box');
+        if (chBox) { chBox.setAttribute('stroke', '#10b981'); chBox.setAttribute('stroke-width', '3'); }
+
+        if (dashZ1Badge) { dashZ1Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700"; dashZ1Badge.innerText = "Вне зоны"; }
+        if (dashZ2Badge) { dashZ2Badge.className = "text-[10px] font-mono-tech px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700"; dashZ2Badge.innerText = "Вне зоны"; }
+        if (dashZ1Status) dashZ1Status.innerText = "Вне зоны";
+        if (dashZ2Status) dashZ2Status.innerText = "Вне зоны";
 
       } else {
         // Transit Zone (Between Phones / Z:0)
